@@ -8,6 +8,7 @@ buildscript {
 }
 
 plugins {
+    id 'application'
     id 'org.jetbrains.kotlin.jvm' version '1.3.40'
 }
 
@@ -36,4 +37,8 @@ compileKotlin {
 }
 compileTestKotlin {
     kotlinOptions.jvmTarget = "1.8"
+}
+
+application {
+    mainClassName = 'MainKt'
 }
