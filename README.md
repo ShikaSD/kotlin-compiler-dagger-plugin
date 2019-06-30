@@ -1,7 +1,9 @@
 # What is this?
 
 An experiment on the idea of Google's Dagger using different means of code generation: Kotlin compiler.
+
 I don't see any particular benefit from doing it this way, but it is always nice to entertain the idea.
+
 It is a personal project to make myself more familiar with the Kotlin compiler internals and code 
 generation in general.
 
