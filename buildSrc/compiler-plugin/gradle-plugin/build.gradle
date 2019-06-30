@@ -1,0 +1,29 @@
+apply plugin: "java-gradle-plugin"
+apply plugin: "org.jetbrains.kotlin.jvm"
+apply plugin: "kotlin-kapt"
+apply plugin: "maven"
+
+group "me.shika.test"
+version "0.0.1-SNAPSHOT"
+
+install {
+    repositories.mavenInstaller {
+        pom.artifactId = 'di-compiler-gradle-plugin'
+    }
+}
+
+gradlePlugin {
+    plugins {
+        simplePlugin {
+            id = "di-compiler-plugin"
+            implementationClass = "me.shika.test.TestCompilerPlugin"
+        }
+    }
+}
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+    implementation "org.jetbrains.kotlin:kotlin-gradle-plugin-api"
+    compileOnly "com.google.auto.service:auto-service:1.0-rc4"
+    kapt "com.google.auto.service:auto-service:1.0-rc4"
+}

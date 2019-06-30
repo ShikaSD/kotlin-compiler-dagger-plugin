@@ -1,0 +1,25 @@
+apply plugin: "org.jetbrains.kotlin.jvm"
+apply plugin: "kotlin-kapt"
+apply plugin: "maven"
+
+group "me.shika.test"
+version "0.0.1-SNAPSHOT"
+
+install {
+    repositories.mavenInstaller {
+        pom.artifactId = 'di-kotlin-compiler-plugin'
+    }
+}
+
+repositories {
+    mavenLocal()
+}
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib"
+    implementation "org.jetbrains.kotlin:kotlin-gradle-plugin-api"
+    compileOnly "org.jetbrains.kotlin:kotlin-compiler-embeddable"
+//    implementation "org.jetbrains.kotlin:kotlin-platform-api:$kotlin_version"
+    compileOnly "com.google.auto.service:auto-service:1.0-rc4"
+    kapt "com.google.auto.service:auto-service:1.0-rc4"
+}
