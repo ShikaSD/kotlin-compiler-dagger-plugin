@@ -3,7 +3,7 @@ import dagger.Module
 import dagger.Provides
 import javax.Inject
 
-@Component(modules = [TestModule::class])
+@Component(modules = [TestModule::class, TestModuleInstance::class])
 interface Main {
     fun provider(): String
     fun providerLambda(): () -> String
@@ -11,10 +11,6 @@ interface Main {
 
 @Module
 object TestModule {
-
-    @Provides
-    fun int(): Int = 0
-
     @Provides
     fun string(int: Int): String = int.toString()
 
@@ -25,17 +21,13 @@ object TestModule {
     fun lambdaInt(int: Int): () -> Int = { int }
 }
 
-fun test(): () -> String {
-    val int = TestModule.int()
-    val string = TestModule.string(int)
-    val lambdaString = TestModule.lambdaString(int, string)
-    return lambdaString
+@Module
+class TestModuleInstance(val int: Int) {
+    @Provides
+    fun int(): Int = int
 }
 
 fun main() {
-    println(test())
-
-    val component = Main.Component()
+    val component = Main.Component(TestModuleInstance(3))
     println(component.providerLambda()())
 }
-

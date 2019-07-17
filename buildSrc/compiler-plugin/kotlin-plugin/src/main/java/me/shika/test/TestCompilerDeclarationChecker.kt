@@ -1,20 +1,16 @@
 package me.shika.test
 
+import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity.*
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.extensions.AnnotationBasedExtension
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtModifierListOwner
-import org.jetbrains.kotlin.resolve.DescriptorUtils.isObject
-import org.jetbrains.kotlin.resolve.annotations.hasJvmStaticAnnotation
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
-import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.getDescriptorsFiltered
 import org.jetbrains.kotlin.types.KotlinType
@@ -22,7 +18,7 @@ import org.jetbrains.kotlin.util.slicedMap.Slices
 import org.jetbrains.kotlin.util.slicedMap.WritableSlice
 import java.util.ArrayDeque
 
-internal val DAGGER_COMPONENT: WritableSlice<ClassDescriptor, List<Pair<FunctionDescriptor, List<FunctionDescriptor>>>> =
+internal val DAGGER_RESOLUTION_RESULT: WritableSlice<ClassDescriptor, List<Pair<FunctionDescriptor, List<FunctionDescriptor>>>> =
     Slices.createSimpleSlice()
 
 class TestCompilerDeclarationChecker(
@@ -36,7 +32,7 @@ class TestCompilerDeclarationChecker(
         descriptor: DeclarationDescriptor,
         context: DeclarationCheckerContext
     ) {
-        if (descriptor is ClassDescriptor && descriptor.isDaggerComponent()) {
+        if (descriptor is ClassDescriptor && descriptor.componentAnnotation() != null) {
             reporter.warn("Found dagger component $descriptor")
 
             val implClass = descriptor.unsubstitutedMemberScope.getDescriptorsFiltered(DescriptorKindFilter.CLASSIFIERS) {
@@ -46,27 +42,15 @@ class TestCompilerDeclarationChecker(
 
             reporter.warn("Exposes types $endpoints, impl class $implClass")
 
-            val annotation = descriptor.annotations.findAnnotation(DAGGER_COMPONENT_ANNOTATION)
-            val arguments = annotation?.allValueArguments
-            val modules = arguments?.get(Name.identifier("modules"))?.value as? List<KClassValue>
-            val functions = modules?.flatMap {
-                val scope = when (val value = it.value) {
-                    is KClassValue.Value.NormalClass -> {
-                        context.moduleDescriptor.findClassAcrossModuleDependencies(value.classId)
-                            ?.unsubstitutedMemberScope
-                    }
-                    is KClassValue.Value.LocalClass -> {
-                        value.type.unwrap().memberScope
-                    }
+            val modules = context.trace.get(DAGGER_MODULES, implClass)
+            val functions = modules
+                ?.filterIsInstance<ClassDescriptor>()
+                ?.flatMap {
+                    it.unsubstitutedMemberScope.getDescriptorsFiltered(DescriptorKindFilter.FUNCTIONS)
+                        .filter {
+                            it.annotations.hasAnnotation(FqName("dagger.Provides"))
+                        }
                 }
-
-                scope?.getDescriptorsFiltered(DescriptorKindFilter.FUNCTIONS)
-                    ?.filter {
-                        it.annotations.hasAnnotation(FqName("dagger.Provides"))
-                            && (it.hasJvmStaticAnnotation() || (it.containingDeclaration as? ClassDescriptor)?.let { isObject(it) } == true)
-                    }
-                    ?: emptyList()
-            }
                 ?.filterIsInstance<FunctionDescriptor>()
                 ?: emptyList()
             reporter.warn("Modules $functions in ${functions?.map { it.containingDeclaration }.distinct()}")
@@ -77,7 +61,7 @@ class TestCompilerDeclarationChecker(
 
                 endpoint to providers
             }
-            context.trace.record(DAGGER_COMPONENT, implClass, result)
+            context.trace.record(DAGGER_RESOLUTION_RESULT, implClass, result)
         }
     }
 
@@ -97,9 +81,20 @@ class TestCompilerDeclarationChecker(
                     && returnType.arguments == element.arguments
             }
 
-//            if (canProvide.isEmpty()) {
+            if (canProvide.isEmpty()) {
 //                context.trace.reportFromPlugin()
-//            }
+                reporter.report(
+                    EXCEPTION,
+                    "Cannot provide $element"
+                )
+            }
+
+            if (canProvide.size > 1) {
+                reporter.report(
+                    EXCEPTION,
+                    "Ambiguous binding for $element: found $canProvide"
+                )
+            }
 
             val nextProvider = canProvide.first()
             nextProvider.valueParameters.forEach {

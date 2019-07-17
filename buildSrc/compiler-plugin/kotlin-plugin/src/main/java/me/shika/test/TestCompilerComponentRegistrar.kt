@@ -9,6 +9,9 @@ import org.jetbrains.kotlin.codegen.extensions.ExpressionCodegenExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
+import org.jetbrains.kotlin.config.CompilerConfigurationKey
+import org.jetbrains.kotlin.config.JVMConfigurationKeys.IR
+import org.jetbrains.kotlin.extensions.CompilerConfigurationExtension
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.resolve.extensions.SyntheticResolveExtension
 import org.jetbrains.kotlin.resolve.jvm.extensions.PackageFragmentProviderExtension
@@ -20,6 +23,14 @@ class TestCompilerComponentRegistrar: ComponentRegistrar {
         if (configuration[KEY_ENABLED] != true) {
             return
         }
+
+        CompilerConfigurationExtension.registerExtension(
+            project,
+            object : CompilerConfigurationExtension {
+                override fun updateConfiguration(configuration: CompilerConfiguration) {
+//                    configuration.put(IR, true)
+                }
+            })
 
         ClassBuilderInterceptorExtension.registerExtension(
             project,

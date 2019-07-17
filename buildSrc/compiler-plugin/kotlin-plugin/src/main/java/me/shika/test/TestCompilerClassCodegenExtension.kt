@@ -10,12 +10,12 @@ import org.jetbrains.kotlin.codegen.StackValue
 import org.jetbrains.kotlin.codegen.context.ClassContext
 import org.jetbrains.kotlin.codegen.extensions.ExpressionCodegenExtension
 import org.jetbrains.kotlin.codegen.writeSyntheticClassMetadata
-import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.Modality
-import org.jetbrains.kotlin.descriptors.Visibilities
+import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor.Kind.*
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
+import org.jetbrains.kotlin.descriptors.impl.ClassConstructorDescriptorImpl
 import org.jetbrains.kotlin.descriptors.impl.SimpleFunctionDescriptorImpl
+import org.jetbrains.kotlin.descriptors.impl.ValueParameterDescriptorImpl
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
@@ -23,10 +23,7 @@ import org.jetbrains.kotlin.resolve.jvm.diagnostics.JvmDeclarationOrigin
 import org.jetbrains.kotlin.resolve.jvm.diagnostics.JvmDeclarationOriginKind
 import org.jetbrains.kotlin.resolve.jvm.diagnostics.OtherOrigin
 import org.jetbrains.kotlin.resolve.jvm.jvmSignature.JvmMethodSignature
-import org.jetbrains.org.objectweb.asm.Opcodes.ACC_PUBLIC
-import org.jetbrains.org.objectweb.asm.Opcodes.ACC_STATIC
-import org.jetbrains.org.objectweb.asm.Opcodes.ACC_SUPER
-import org.jetbrains.org.objectweb.asm.Opcodes.V1_6
+import org.jetbrains.org.objectweb.asm.Opcodes.*
 import org.jetbrains.org.objectweb.asm.Type
 
 class TestCompilerCodegenExtension(private val reporter: MessageCollector): ExpressionCodegenExtension {
@@ -49,19 +46,90 @@ class TestCompilerCodegenExtension(private val reporter: MessageCollector): Expr
         super.generateClassSyntheticParts(codegen)
 
         val descriptor = codegen.descriptor
-        val resolveResult = codegen.bindingContext[DAGGER_COMPONENT, descriptor] ?: return
+        descriptor.generateConstructorAndFields(codegen)
+        descriptor.generateBindings(codegen)
+    }
+
+    private fun ClassDescriptor.generateConstructorAndFields(codegen: ImplementationBodyCodegen) {
+        val moduleInstances = codegen.bindingContext[DAGGER_MODULE_INSTANCES, this] ?: return
+        reporter.warn("Generating constructor for $this")
+
+        moduleInstances.forEach {
+            codegen.v.newField(
+                OtherOrigin(this),
+                ACC_PRIVATE or ACC_SYNTHETIC,
+                it.name.asString().decapitalize(),
+                codegen.typeMapper.mapType(it.defaultType).descriptor,
+                null,
+                null
+            )
+        }
+
+        val constructor = ClassConstructorDescriptorImpl.create(
+            this,
+            Annotations.EMPTY,
+            false,
+            source
+        ).apply {
+            initialize(
+                moduleInstances.mapIndexed { index, it ->
+                    ValueParameterDescriptorImpl(
+                        containingDeclaration = this,
+                        original = null,
+                        index = index,
+                        annotations = Annotations.EMPTY,
+                        name = Name.identifier(it.name.asString().decapitalize()),
+                        outType = it.defaultType,
+                        declaresDefaultValue = false,
+                        isCrossinline = false,
+                        isNoinline = false,
+                        varargElementType = null,
+                        source = source
+                    )
+                },
+                Visibilities.PUBLIC
+            )
+            returnType = defaultType
+        }
+
+        codegen.generateFunction(
+            constructor
+        ) {
+            val selfType = asmType(defaultType)
+
+            v.load(0, selfType)
+            v.invokespecial(selfType.internalName, "<init>", "()V", false)
+
+            moduleInstances.forEachIndexed { index, it ->
+                val name = it.name.asString().decapitalize()
+                val type = asmType(it.defaultType)
+
+                v.load(0, selfType)
+                v.load(index + 1, type)
+                v.putfield(selfType.internalName, name, type.descriptor)
+            }
+
+            v.areturn(Type.VOID_TYPE)
+        }
+    }
+
+    private fun ClassDescriptor.generateBindings(codegen: ImplementationBodyCodegen) {
+        val resolveResult = codegen.bindingContext[DAGGER_RESOLUTION_RESULT, this] ?: return
+        val moduleInstances = codegen.bindingContext[DAGGER_MODULE_INSTANCES, this] ?: return
+
+        val selfType = codegen.typeMapper.mapType(this)
 
         resolveResult.forEach { (binding, providers) ->
             val functionDescriptor = SimpleFunctionDescriptorImpl.create(
-                descriptor,
+                this,
                 Annotations.EMPTY,
                 binding.name,
-                CallableMemberDescriptor.Kind.SYNTHESIZED,
+                SYNTHESIZED,
                 binding.source
             ).apply {
                 initialize(
                     null,
-                    descriptor.thisAsReceiverParameter,
+                    thisAsReceiverParameter,
                     mutableListOf(),
                     binding.valueParameters,
                     binding.returnType,
@@ -70,60 +138,74 @@ class TestCompilerCodegenExtension(private val reporter: MessageCollector): Expr
                 )
             }
 
-            codegen.functionCodegen.generateMethod(
-                OtherOrigin(
-                    codegen.myClass.psiOrParent,
-                    functionDescriptor
-                ),
-                functionDescriptor,
-                object: FunctionGenerationStrategy.CodegenBased(codegen.state) {
-                    override fun doGenerateBody(gen: ExpressionCodegen, signature: JvmMethodSignature) {
-                        val returnType = gen.asmType(binding.returnType!!)
+            codegen.generateFunction(functionDescriptor) {
+                val returnType = asmType(binding.returnType!!)
 
-                        val variableLength = providers.size
-                        reporter.warn("Repeating for $variableLength")
+                val variableLength = providers.size
+                reporter.warn("Repeating for $variableLength")
 
-                        (variableLength downTo 1).forEach {
-                            val func = providers[it - 1]
-                            val obj = func.containingDeclaration as ClassDescriptor
-                            val returnType = gen.asmType(func.returnType!!)
-                            val type = gen.asmType(obj.defaultType)
+                (variableLength downTo 1).forEach {
+                    val func = providers[it - 1]
+                    val obj = func.containingDeclaration as ClassDescriptor
+                    val returnType = asmType(func.returnType!!)
+                    val moduleType = asmType(obj.defaultType)
 
-                            gen.v.getstatic(
-                                type.internalName,
-                                "INSTANCE",
-                                type.descriptor
-                            )
-
-                            val params = func.valueParameters.map { it.type }
-                            val providerIndices = params.map { paramType ->
-                                providers.indexOfFirst {
-                                    it.returnType?.constructor == paramType.constructor
-                                        && it.returnType?.arguments == paramType.arguments
-                                }
-                            }
-
-                            providerIndices.forEach {
-                                gen.v.load(it + 1, gen.asmType(providers[it].returnType!!))
-                            }
-
-                            gen.v.invokevirtual(
-                                type.internalName,
-                                "${func.name}",
-                                "(${params.joinToString("") { gen.asmType(it).descriptor }})${returnType.descriptor}",
-                                false
-                            )
-
-                            gen.v.store(it, returnType)
-                        }
-
-                        gen.v.load(1, returnType)
-                        gen.v.areturn(returnType)
+                    if (moduleInstances.contains(obj)) {
+                        v.load(0, selfType)
+                        v.getfield(
+                            selfType.internalName,
+                            obj.name.asString().decapitalize(),
+                            moduleType.descriptor
+                        )
+                    } else {
+                        v.getstatic(
+                            moduleType.internalName,
+                            "INSTANCE",
+                            moduleType.descriptor
+                        )
                     }
 
+                    val params = func.valueParameters.map { it.type }
+                    val providerIndices = params.map { paramType ->
+                        providers.indexOfFirst {
+                            it.returnType?.constructor == paramType.constructor
+                                    && it.returnType?.arguments == paramType.arguments
+                        }
+                    }
+
+                    providerIndices.forEach {
+                        v.load(it + 1, asmType(providers[it].returnType!!))
+                    }
+
+                    v.invokevirtual(
+                        moduleType.internalName,
+                        "${func.name}",
+                        "(${params.joinToString("") { asmType(it).descriptor }})${returnType.descriptor}",
+                        false
+                    )
+
+                    v.store(it, returnType)
                 }
-            )
+
+                v.load(1, returnType)
+                v.areturn(returnType)
+            }
         }
+    }
+
+    private fun ImplementationBodyCodegen.generateFunction(f: FunctionDescriptor, body: ExpressionCodegen.() -> Unit) {
+        functionCodegen.generateMethod(
+            OtherOrigin(
+                myClass.psiOrParent,
+                f
+            ),
+            f,
+            object: FunctionGenerationStrategy.CodegenBased(state) {
+                override fun doGenerateBody(gen: ExpressionCodegen, signature: JvmMethodSignature) {
+                    gen.body()
+                }
+            }
+        )
     }
 
 //
@@ -158,7 +240,7 @@ class TestCompilerCodegenExtension(private val reporter: MessageCollector): Expr
             descriptor,
             Annotations.EMPTY,
             Name.identifier("methodISee"),
-            CallableMemberDescriptor.Kind.SYNTHESIZED,
+            SYNTHESIZED,
             descriptor.source
         ).apply {
             initialize(
