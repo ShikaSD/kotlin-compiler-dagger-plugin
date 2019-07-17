@@ -13,7 +13,7 @@ If you, for any reason, want to look through this:
 - The test project files is in `src/main/kotlin` (this is what gets compiled)
 
 Right now I have implemented only the concept of exposing dependencies through `Component` and providing
-them through `Module` implemented as `object`.
+them through `Module` implemented as `object` or `class` instance.
 
 # To launch test file
 
