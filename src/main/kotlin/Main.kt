@@ -1,7 +1,6 @@
 import dagger.Component
 import dagger.Module
 import dagger.Provides
-import javax.Inject
 
 @Component(modules = [TestModule::class, TestModuleInstance::class])
 interface Main {
@@ -27,7 +26,7 @@ class TestModuleInstance(val int: Int) {
     fun int(): Int = int
 }
 
-fun main() {
+fun main(args: Array<String>) {
     val component = Main.Component(TestModuleInstance(3))
     println(component.providerLambda()())
 }

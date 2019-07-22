@@ -1,6 +1,6 @@
 package me.shika.test
 
-import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity.*
+import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity.EXCEPTION
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
@@ -16,7 +16,7 @@ import org.jetbrains.kotlin.resolve.scopes.getDescriptorsFiltered
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.util.slicedMap.Slices
 import org.jetbrains.kotlin.util.slicedMap.WritableSlice
-import java.util.ArrayDeque
+import java.util.*
 
 internal val DAGGER_RESOLUTION_RESULT: WritableSlice<ClassDescriptor, List<Pair<FunctionDescriptor, List<FunctionDescriptor>>>> =
     Slices.createSimpleSlice()
@@ -38,7 +38,7 @@ class TestCompilerDeclarationChecker(
             val implClass = descriptor.unsubstitutedMemberScope.getDescriptorsFiltered(DescriptorKindFilter.CLASSIFIERS) {
                 it.asString() == "Component"
             }.first() as ClassDescriptor
-            val endpoints = implClass.findEndpoints()
+            val endpoints = descriptor.findEndpoints()
 
             reporter.warn("Exposes types $endpoints, impl class $implClass")
 
