@@ -1,11 +1,13 @@
 import dagger.Component
 import dagger.Module
 import dagger.Provides
+import javax.Inject
 
 @Component(modules = [TestModule::class, TestModuleInstance::class])
 interface Main {
     fun provider(): String
     fun providerLambda(): () -> String
+    fun injected(): Injected
 }
 
 @Module
@@ -20,6 +22,8 @@ object TestModule {
     fun lambdaInt(int: Int): () -> Int = { int }
 }
 
+class Injected @Inject constructor(val lambda: () -> String)
+
 @Module
 class TestModuleInstance(val int: Int) {
     @Provides
@@ -28,5 +32,5 @@ class TestModuleInstance(val int: Int) {
 
 fun main(args: Array<String>) {
     val component = Main.Component(TestModuleInstance(3))
-    println(component.providerLambda()())
+    println(component.injected().lambda())
 }

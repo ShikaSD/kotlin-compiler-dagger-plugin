@@ -17,6 +17,7 @@ import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.builders.*
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.declarations.impl.IrValueParameterImpl
+import org.jetbrains.kotlin.ir.expressions.IrGetValue
 import org.jetbrains.kotlin.ir.expressions.impl.IrDelegatingConstructorCallImpl
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.ir.visitors.IrElementVisitorVoid
@@ -207,6 +208,39 @@ class TestCompilerIrGeneration(val reporter: MessageCollector): IrGenerationExte
         backendContext: BackendContext
     ) {
         val irClass = this
+
+        fun IrBlockBodyBuilder.resolveProvider(
+            provider: FunctionDescriptor,
+            params: List<IrGetValue>,
+            module: ClassDescriptor
+        ) = irGet(
+            createTmpVariable(
+                irCall(
+                    backendContext.ir.symbols.externalSymbolTable.referenceDeclaredFunction(provider)
+                ).also { call ->
+                    call.dispatchReceiver =
+                        if (module in moduleInstances) {
+                            irGetField(
+                                irGet(
+                                    irClass.defaultType,
+                                    irClass.thisReceiver!!.symbol
+                                ),
+                                declarations.find {
+                                    it is IrField && it.name.asString() == module.name.asString().decapitalize()
+                                } as IrField
+                            )
+                        } else {
+                            irGetObject(
+                                backendContext.ir.symbols.externalSymbolTable.referenceClass(module)
+                            )
+                        }
+                    provider.valueParameters.map { value ->
+                        params.find { it.descriptor.type == value.type }
+                    }.forEachIndexed(call::putValueArgument)
+                }
+            )
+        )
+
         resolveResult.forEach { (binding, providers) ->
             val functionDescriptor = SimpleFunctionDescriptorImpl.create(
                 descriptor,
@@ -244,33 +278,23 @@ class TestCompilerIrGeneration(val reporter: MessageCollector): IrGenerationExte
                         (providersLength downTo 1).forEach {
                             val provider = providers[it - 1]
                             val module = provider.containingDeclaration as ClassDescriptor
-                            params += irGet(
-                                createTmpVariable(
-                                    irCall(
-                                        backendContext.ir.symbols.externalSymbolTable.referenceDeclaredFunction(provider)
-                                    ).also { call ->
-                                        call.dispatchReceiver =
-                                            if (module in moduleInstances) {
-                                                irGetField(
-                                                    irGet(
-                                                        irClass.defaultType,
-                                                        irClass.thisReceiver!!.symbol
-                                                    ),
-                                                    declarations.find {
-                                                        it is IrField && it.name.asString() == module.name.asString().decapitalize()
-                                                     } as IrField
-                                                )
-                                            } else {
-                                                irGetObject(
-                                                    backendContext.ir.symbols.externalSymbolTable.referenceClass(module)
-                                                )
-                                            }
-                                        provider.valueParameters.map { value ->
-                                            params.find { it.descriptor.type == value.type }
-                                        }.forEachIndexed(call::putValueArgument)
-                                    }
+
+                            if (provider is ClassConstructorDescriptor) {
+                                params += irGet(
+                                    createTmpVariable(
+                                        irCallConstructor(
+                                            backendContext.ir.symbols.externalSymbolTable.referenceConstructor(provider),
+                                            emptyList()
+                                        ).also {
+                                            provider.valueParameters.map { value ->
+                                                params.find { it.descriptor.type == value.type }
+                                            }.forEachIndexed(it::putValueArgument)
+                                        }
+                                    )
                                 )
-                            )
+                            } else {
+                                params += resolveProvider(provider, params, module)
+                            }
                         }
                         +irReturn(params.last())
                     }

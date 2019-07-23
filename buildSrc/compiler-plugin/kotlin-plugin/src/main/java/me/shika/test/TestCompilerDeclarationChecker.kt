@@ -3,6 +3,7 @@ package me.shika.test
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity.EXCEPTION
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.extensions.AnnotationBasedExtension
@@ -75,11 +76,10 @@ class TestCompilerDeclarationChecker(
 
         while (deque.isNotEmpty()) {
             val element = deque.pop()
-            val canProvide = providers.filter { it ->
+            val canProvide = providers.filter {
                 val returnType = it.returnType ?: return@filter false
-                returnType.constructor == element.constructor
-                    && returnType.arguments == element.arguments
-            }
+                returnType.constructor == element.constructor && returnType.arguments == element.arguments
+            } + listOfNotNull(element.injectableConstructor())
 
             if (canProvide.isEmpty()) {
 //                context.trace.reportFromPlugin()
@@ -117,9 +117,19 @@ class TestCompilerDeclarationChecker(
 //
 //        val injectedTypes = functions.filter { it.valueParameters.isNotEmpty() }
 //            .map { it.valueParameters.first().type.constructor.declarationDescriptor as ClassDescriptor }
-//            .mapNotNull { it.constructors.firstOrNull { it.annotations.hasAnnotation(FqName("javax.Inject")) } }
 //            .flatMap { it.valueParameters.map { it.type } }
 
         return exposedTypes
+    }
+
+    private fun KotlinType.injectableConstructor(): ConstructorDescriptor? {
+        val classDescriptor = constructor.declarationDescriptor as? ClassDescriptor ?: return null
+        val injectableConstructors = classDescriptor.constructors.filter {
+            it.annotations.hasAnnotation(FqName("javax.Inject"))
+        }
+        if (injectableConstructors.size > 1) {
+            reporter.report(EXCEPTION, "Class can have only one @Inject annotated constructor, found $injectableConstructors")
+        }
+        return injectableConstructors.firstOrNull()
     }
 }
