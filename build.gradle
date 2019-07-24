@@ -30,6 +30,8 @@ allprojects {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+    compileOnly "javax.inject:javax.inject:1"
+    implementation 'com.google.dagger:dagger:2.23.2'
 }
 
 compileKotlin {

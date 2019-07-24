@@ -6,12 +6,14 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.extensions.AnnotationBasedExtension
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtModifierListOwner
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
+import org.jetbrains.kotlin.resolve.descriptorUtil.annotationClass
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.getDescriptorsFiltered
 import org.jetbrains.kotlin.types.KotlinType
@@ -20,6 +22,8 @@ import org.jetbrains.kotlin.util.slicedMap.WritableSlice
 import java.util.*
 
 internal val DAGGER_RESOLUTION_RESULT: WritableSlice<ClassDescriptor, List<Pair<FunctionDescriptor, List<FunctionDescriptor>>>> =
+    Slices.createSimpleSlice()
+internal val DAGGER_SCOPED_BINDINGS: WritableSlice<ClassDescriptor, List<FunctionDescriptor>> =
     Slices.createSimpleSlice()
 
 class TestCompilerDeclarationChecker(
@@ -35,7 +39,6 @@ class TestCompilerDeclarationChecker(
     ) {
         if (descriptor is ClassDescriptor && descriptor.componentAnnotation() != null) {
             reporter.warn("Found dagger component $descriptor")
-
             val implClass = descriptor.unsubstitutedMemberScope.getDescriptorsFiltered(DescriptorKindFilter.CLASSIFIERS) {
                 it.asString() == "Component"
             }.first() as ClassDescriptor
@@ -54,24 +57,30 @@ class TestCompilerDeclarationChecker(
                 }
                 ?.filterIsInstance<FunctionDescriptor>()
                 ?: emptyList()
-            reporter.warn("Modules $functions in ${functions?.map { it.containingDeclaration }.distinct()}")
+            reporter.warn("Modules $functions in ${functions.map { it.containingDeclaration }.distinct()}")
 
             val result = endpoints.map { endpoint ->
-                val providers = endpoint.resolveDependencies(functions, context)
+                val providers = endpoint.resolveDependencies(functions, descriptor, implClass, context)
                 reporter.warn("$endpoint can be provided with $providers")
 
                 endpoint to providers
             }
+
             context.trace.record(DAGGER_RESOLUTION_RESULT, implClass, result)
         }
     }
 
     private fun FunctionDescriptor.resolveDependencies(
         providers: List<FunctionDescriptor>,
+        componentDescriptor: ClassDescriptor,
+        implDescriptor: ClassDescriptor,
         context: DeclarationCheckerContext
     ): List<FunctionDescriptor> {
+        val componentScopes = componentDescriptor.scopeAnnotations()
+
         val deque = ArrayDeque<KotlinType>()
-        var result = mutableListOf<FunctionDescriptor>()
+        val result = mutableListOf<FunctionDescriptor>()
+        val scopedProviders = mutableListOf<FunctionDescriptor>()
         deque.push(returnType)
 
         while (deque.isNotEmpty()) {
@@ -97,6 +106,21 @@ class TestCompilerDeclarationChecker(
             }
 
             val nextProvider = canProvide.first()
+
+            val scopeAnnotations = nextProvider.scopeAnnotations().map { it.fqName }
+            val componentScopeNames = componentScopes.map { it.fqName }
+            if (!componentScopeNames.containsAll(scopeAnnotations)) {
+                reporter.report(
+                    EXCEPTION,
+                    "Component $componentDescriptor and ${nextProvider.name} scopes do not match: " +
+                            "component - $componentScopeNames," +
+                            " binding - $scopeAnnotations"
+                )
+            }
+            if (!scopeAnnotations.isEmpty()) {
+                scopedProviders.add(nextProvider)
+            }
+
             nextProvider.valueParameters.forEach {
                 deque.push(it.type)
             }
@@ -114,7 +138,6 @@ class TestCompilerDeclarationChecker(
 
         val exposedTypes = functions.filter { it.valueParameters.isEmpty() }
 
-//
 //        val injectedTypes = functions.filter { it.valueParameters.isNotEmpty() }
 //            .map { it.valueParameters.first().type.constructor.declarationDescriptor as ClassDescriptor }
 //            .flatMap { it.valueParameters.map { it.type } }
@@ -125,7 +148,7 @@ class TestCompilerDeclarationChecker(
     private fun KotlinType.injectableConstructor(): ConstructorDescriptor? {
         val classDescriptor = constructor.declarationDescriptor as? ClassDescriptor ?: return null
         val injectableConstructors = classDescriptor.constructors.filter {
-            it.annotations.hasAnnotation(FqName("javax.Inject"))
+            it.annotations.hasAnnotation(FqName("javax.inject.Inject"))
         }
         if (injectableConstructors.size > 1) {
             reporter.report(EXCEPTION, "Class can have only one @Inject annotated constructor, found $injectableConstructors")
@@ -133,3 +156,8 @@ class TestCompilerDeclarationChecker(
         return injectableConstructors.firstOrNull()
     }
 }
+
+fun DeclarationDescriptor.scopeAnnotations(): List<AnnotationDescriptor> =
+    annotations.filter {
+        it.annotationClass?.annotations?.hasAnnotation(FqName("javax.inject.Scope")) == true
+    }
