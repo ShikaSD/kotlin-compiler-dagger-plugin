@@ -2,6 +2,7 @@ package me.shika.test
 
 import com.google.auto.service.AutoService
 import me.shika.test.TestCommandLineProcessor.Companion.KEY_ENABLED
+import me.shika.test.ir.TestCompilerIrGeneration
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector

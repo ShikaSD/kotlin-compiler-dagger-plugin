@@ -8,6 +8,7 @@ import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.extensions.AnnotationBasedExtension
+import org.jetbrains.kotlin.ir.expressions.typeParametersCount
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtModifierListOwner
@@ -148,7 +149,7 @@ class TestCompilerDeclarationChecker(
     private fun KotlinType.injectableConstructor(): ConstructorDescriptor? {
         val classDescriptor = constructor.declarationDescriptor as? ClassDescriptor ?: return null
         val injectableConstructors = classDescriptor.constructors.filter {
-            it.annotations.hasAnnotation(FqName("javax.inject.Inject"))
+            it.annotations.hasAnnotation(FqName("javax.inject.Inject")) && it.typeParametersCount == 0
         }
         if (injectableConstructors.size > 1) {
             reporter.report(EXCEPTION, "Class can have only one @Inject annotated constructor, found $injectableConstructors")

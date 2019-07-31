@@ -19,7 +19,7 @@ object TestModule {
 
     @TestScope
     @Provides
-    fun lambdaString(int: Int, string: String): () -> String = { int.toString() + string }
+    fun lambdaString(int: Int, string: String): () -> String = { int.toString() + string }.also { println("Invoked lambdaString") }
 
     @Provides
     fun lambdaInt(int: Int): () -> Int = { int }
@@ -29,9 +29,11 @@ class Injected @Inject constructor(val lambda: () -> String)
 
 @Module
 class TestModuleInstance(val int: Int) {
+    @TestScope
     @Provides
-    fun int(): Int = int
+    fun int(): Int = int.also { println("Invoked int") }
 }
+
 
 @Scope
 annotation class TestScope
