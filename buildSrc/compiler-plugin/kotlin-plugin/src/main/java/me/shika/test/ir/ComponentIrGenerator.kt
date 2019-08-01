@@ -1,14 +1,18 @@
 package me.shika.test.ir
 
-import me.shika.test.ir.TestCompilerIrGeneration.DiOrigin
+import me.shika.test.TestCompilerIrGeneration.DiOrigin
+import me.shika.test.model.Binding
+import me.shika.test.model.Endpoint
+import me.shika.test.model.Injectable
+import me.shika.test.model.ResolveResult
 import org.jetbrains.kotlin.backend.common.BackendContext
 import org.jetbrains.kotlin.backend.common.lower.at
 import org.jetbrains.kotlin.backend.common.lower.createIrBuilder
-import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor.Kind.SYNTHESIZED
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
+import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.impl.ClassConstructorDescriptorImpl
-import org.jetbrains.kotlin.descriptors.impl.SimpleFunctionDescriptorImpl
 import org.jetbrains.kotlin.descriptors.impl.ValueParameterDescriptorImpl
 import org.jetbrains.kotlin.ir.builders.*
 import org.jetbrains.kotlin.ir.builders.declarations.addConstructor
@@ -23,29 +27,28 @@ import org.jetbrains.kotlin.ir.expressions.IrDeclarationReference
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrGetField
 import org.jetbrains.kotlin.ir.expressions.IrGetValue
+import org.jetbrains.kotlin.ir.expressions.impl.IrSetFieldImpl
 import org.jetbrains.kotlin.ir.types.makeNullable
 import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.types.KotlinType
-import org.jetbrains.kotlin.types.TypeProjectionImpl
 
 class ComponentIrGenerator(
     private val irClass: IrClass,
     private val moduleInstances: List<ClassifierDescriptor>,
-    private val resolveResult: List<Pair<FunctionDescriptor, List<FunctionDescriptor>>>,
-    private val scopedBindings: List<FunctionDescriptor>,
+    private val resolveResult: List<ResolveResult>,
+    private val scopedBindings: Set<Binding>,
     private val symbolTable: SymbolTable = SymbolTable(),
     private val backendContext: BackendContext
 ) {
     private val externalSymbolTable = backendContext.ir.symbols.externalSymbolTable
     private val typeTranslator = backendContext.typeTranslator()
     private val scopedProviders = hashMapOf<IrField, IrClass>()
+    private val scopedProviderFields = hashMapOf<Binding, IrField>()
 
     fun KotlinType.toIrType() = typeTranslator.translateType(this)
     fun ClassifierDescriptor.bindingName() = Name.identifier(name.asString().decapitalize())
-    fun FunctionDescriptor.providerName() = Name.identifier(name.asString().capitalize() + "Provider")
-    fun FunctionDescriptor.providerFieldName() = Name.identifier(name.asString() + "Provider")
 
     fun generateFields() {
         moduleInstances.forEach { module ->
@@ -59,12 +62,11 @@ class ComponentIrGenerator(
         if (scopedBindings.isEmpty()) return
 
         for (binding in scopedBindings) {
-            val typeProjection = listOf(TypeProjectionImpl(binding.returnType!!))
-            val bindingModule = binding.containingDeclaration as ClassDescriptor
+            val bindingIrType = binding.type!!.toIrType()
 
             val providerIrClass = irClass.addClass(
                 symbolTable,
-                binding.providerName()
+                binding.providerName
             ).also { cls ->
                 symbolTable.withScope(cls.descriptor) {
                     cls.thisReceiver = symbolTable.declareValueParameter(
@@ -75,56 +77,53 @@ class ComponentIrGenerator(
                         it.parent = cls
                     }
 
-                    val providerParameters = binding.valueParameters.mapTo(mutableListOf()) {
+                    val providerParameters = binding.resolvedDescriptor.valueParameters.mapTo(mutableListOf()) {
                         it.type.toIrType() to it.name
                     }
-                    if (bindingModule in moduleInstances) {
-                        val moduleName = bindingModule.bindingName()
-                        val moduleType = bindingModule.defaultType.toIrType()
 
-                        val moduleField = cls.addField {
-                            name = moduleName
-                            type = moduleType
-                        }
-                        cls.addConstructor {
-                            returnType = cls.defaultType
-                        }.also { ctor ->
-                            val moduleParam = ctor.addValueParameter {
-                                name = moduleName
-                                type = moduleType
-                                origin = DiOrigin
-                            }.also { it.parent = ctor }
+                    cls.addConstructor {
+                        returnType = cls.defaultType
+                    }.also { ctor ->
+                        symbolTable.withScope(ctor.descriptor) {
+                            ctor.body = backendContext.createIrBuilder(ctor.symbol).irBlockBody {
+                                callDefaultConstructor()
 
-                            symbolTable.withScope(ctor.descriptor) {
-                                ctor.body = backendContext.createIrBuilder(ctor.symbol).irBlockBody {
-                                    callDefaultConstructor()
+                                if (binding is Binding.InstanceFunction) {
+                                    val bindingModule = binding.moduleInstance
+                                    val moduleName = bindingModule.bindingName()
+                                    val moduleType = bindingModule.defaultType.toIrType()
+
+                                    val moduleField = cls.addField {
+                                        name = moduleName
+                                        type = moduleType
+                                    }
+
+                                    val moduleParam = ctor.addValueParameter {
+                                        name = moduleName
+                                        type = moduleType
+                                        origin = DiOrigin
+                                    }.also { it.parent = ctor }
+
                                     +irSetField(
                                         irGet(cls.thisReceiver!!),
                                         moduleField,
                                         irGet(moduleParam)
                                     )
                                 }
-                            }
-                        }
-                    } else {
-                        cls.addConstructor { returnType = cls.defaultType }.also { ctor ->
-                            symbolTable.withScope(ctor.descriptor) {
-                                ctor.body = backendContext.createIrBuilder(ctor.symbol).irBlockBody {
-                                    callDefaultConstructor()
-                                    +irReturnUnit()
-                                }
+
+                                +irReturnUnit()
                             }
                         }
                     }
 
                     val resultField = cls.addField {
                         name = Name.identifier("result")
-                        type = binding.returnType!!.toIrType().makeNullable()
+                        type = bindingIrType.makeNullable()
                     }
 
                     cls.addFunction(
                         "get",
-                        binding.returnType!!.toIrType(),
+                        bindingIrType,
                         isStatic = false
                     ).also { func ->
                         providerParameters.forEach {
@@ -147,7 +146,7 @@ class ComponentIrGenerator(
                                         +irSetField(
                                             receiver,
                                             resultField,
-                                            generateProvider(
+                                            generateBinding(
                                                 cls,
                                                 binding,
                                                 func.valueParameters.map { irGet(it) }
@@ -163,7 +162,7 @@ class ComponentIrGenerator(
             }
 
             val providerField = irClass.addField {
-                name = binding.providerFieldName()
+                name = Name.identifier(binding.providerName.asString().decapitalize())
                 type = providerIrClass.defaultType
                 isStatic = false
             }.also { providerField ->
@@ -173,11 +172,11 @@ class ComponentIrGenerator(
                             providerIrClass.constructors.first().symbol,
                             emptyList()
                         ).also { call ->
-                            if (bindingModule in moduleInstances) {
+                            if (binding is Binding.InstanceFunction) {
                                 call.putValueArgument(0, irGetField(
                                     irGet(irClass.thisReceiver!!),
                                     irClass.declarations.filterIsInstance<IrField>()
-                                        .first { it.type.toKotlinType() == bindingModule.defaultType }
+                                        .first { it.type.toKotlinType() == binding.moduleInstance.defaultType }
                                 ))
                             }
                         }
@@ -186,6 +185,7 @@ class ComponentIrGenerator(
             }
 
             scopedProviders[providerField] = providerIrClass
+            scopedProviderFields[binding] = providerField
         }
     }
 
@@ -262,97 +262,126 @@ class ComponentIrGenerator(
     }
 
     fun generateBindings() {
-        resolveResult.forEach { (binding, providers) ->
-            val functionDescriptor = SimpleFunctionDescriptorImpl.create(
-                irClass.descriptor,
-                Annotations.EMPTY,
-                binding.name,
-                SYNTHESIZED,
-                binding.source
-            ).apply {
-                initialize(
-                    null,
-                    irClass.descriptor.thisAsReceiverParameter,
-                    mutableListOf(),
-                    binding.valueParameters,
-                    binding.returnType,
-                    Modality.FINAL,
-                    Visibilities.PUBLIC
-                )
-            }
+        resolveResult.filter { it.endpoint is Endpoint.Exposed }.forEach { (endpoint, bindings) ->
+            endpoint as Endpoint.Exposed
+            irClass.addFunction(
+                name = endpoint.value.name.asString(),
+                returnType = endpoint.value.returnType!!.toIrType()
+            ).also { func ->
+                func.dispatchReceiverParameter = irClass.thisReceiver
+                endpoint.value.valueParameters.forEach {
+                    func.addValueParameter(
+                        name = it.name.asString(),
+                        type = it.type.toIrType()
+                    ).also { it.parent = func }
+                }
 
-            val irFunction = symbolTable.declareSimpleFunction(
-                irClass.startOffset,
-                irClass.endOffset,
-                DiOrigin,
-                functionDescriptor
-            ).also {
-                it.parent = irClass
-                it.returnType = typeTranslator.translateType(functionDescriptor.returnType!!)
-                it.dispatchReceiverParameter = irClass.thisReceiver
-
-                it.body = backendContext.createIrBuilder(it.symbol)
-                    .at(irClass)
-                    .irBlockBody(irClass.startOffset, irClass.endOffset) {
-                        generateBinding(providers, it.valueParameters.map { irGet(it) })
-                    }
-            }
-            irClass.addMember(irFunction)
-        }
-    }
-
-    private fun IrBlockBodyBuilder.generateBinding(
-        providers: List<FunctionDescriptor>,
-        parameters: List<IrDeclarationReference>
-    ) {
-        val providersLength = providers.size
-        val params = parameters.toMutableList()
-
-        (providersLength downTo 1).forEach {
-            val provider = providers[it - 1]
-            params += irGet(
-                createTmpVariable(
-                    if (provider in scopedBindings) {
-                        generateScopedProvider(irClass, provider, params)
-                    } else {
-                        generateProvider(irClass, provider, params)
-                    }
-                )
-            )
-        }
-        +irReturn(params.last())
-    }
-
-    private fun IrBlockBodyBuilder.generateProvider(
-        cls: IrClass,
-        provider: FunctionDescriptor,
-        parameters: List<IrDeclarationReference>
-    ): IrExpression {
-        val call = when (provider) {
-            is ClassConstructorDescriptor -> irCallConstructor(
-                externalSymbolTable.referenceConstructor(provider),
-                emptyList()
-            )
-            else -> irCall(
-                externalSymbolTable.referenceDeclaredFunction(provider)
-            ).also {
-                val module = provider.containingDeclaration as ClassDescriptor
-                it.dispatchReceiver = if (module in moduleInstances) {
-                    irGetField(
-                        irGet(cls.thisReceiver!!),
-                        cls.declarations.find {
-                            it is IrField && it.name == module.bindingName()
-                        } as IrField
-                    )
-                } else {
-                    irGetObject(
-                        externalSymbolTable.referenceClass(module)
+                func.body = backendContext.createIrBuilder(func.symbol).irBlockBody {
+                    +irReturn(
+                        generateBinding(bindings, func.valueParameters.map { irGet(it) })
                     )
                 }
             }
         }
 
-        provider.valueParameters.map { value ->
+        resolveResult.filter { it.endpoint is Endpoint.Injected }
+            .groupBy { (it.endpoint as Endpoint.Injected).function }
+            .forEach { (function, results) ->
+                irClass.addFunction(
+                    name = function.name.asString(),
+                    returnType = function.returnType!!.toIrType()
+                ).also { func ->
+                    func.dispatchReceiverParameter = irClass.thisReceiver
+                    function.valueParameters.forEach {
+                        func.addValueParameter(
+                            name = it.name.asString(),
+                            type = it.type.toIrType()
+                        ).also { it.parent = func }
+                    }
+
+                    func.body = backendContext.createIrBuilder(func.symbol).irBlockBody {
+                        val injectable = func.valueParameters[0]
+                        results.forEach {
+                            val endpoint = it.endpoint as Endpoint.Injected
+
+                            val generatedBinding = generateBinding(it.bindings, emptyList())
+                            when (endpoint.value) {
+                                is Injectable.Property -> {
+                                    val propertySymbol = externalSymbolTable.referenceField(endpoint.value.descriptor)
+
+                                    +IrSetFieldImpl(
+                                        startOffset, endOffset,
+                                        propertySymbol,
+                                        irGet(injectable),
+                                        generatedBinding,
+                                        context.irBuiltIns.unitType
+                                    )
+                                }
+                                is Injectable.Setter -> {
+                                    val setterSymbol = externalSymbolTable.referenceSimpleFunction(endpoint.value.descriptor)
+
+                                    +irCall(setterSymbol).also {
+                                        it.dispatchReceiver = irGet(injectable)
+                                        it.putValueArgument(0, generatedBinding)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+    }
+
+    private fun IrBlockBodyBuilder.generateBinding(
+        bindings: Set<Binding>,
+        parameters: List<IrDeclarationReference>
+    ): IrDeclarationReference {
+        val params = parameters.toMutableList()
+
+        bindings.reversed().forEach { binding ->
+            params += irGet(
+                createTmpVariable(
+                    if (binding in scopedBindings) {
+                        generateScopedBinding(irClass, binding, params)
+                    } else {
+                        generateBinding(irClass, binding, params)
+                    }
+                )
+            )
+        }
+        return params.last()
+    }
+
+    private fun IrBlockBodyBuilder.generateBinding(
+        cls: IrClass,
+        binding: Binding,
+        parameters: List<IrDeclarationReference>
+    ): IrExpression {
+        val call = when (binding) {
+            is Binding.Constructor -> irCallConstructor(
+                externalSymbolTable.referenceConstructor(binding.descriptor),
+                emptyList()
+            )
+            is Binding.StaticFunction -> irCall(
+                externalSymbolTable.referenceDeclaredFunction(binding.descriptor)
+            ).also {
+                it.dispatchReceiver = irGetObject(
+                    externalSymbolTable.referenceClass(it.descriptor.containingDeclaration as ClassDescriptor)
+                )
+            }
+            is Binding.InstanceFunction -> irCall(
+                externalSymbolTable.referenceDeclaredFunction(binding.descriptor)
+            ).also {
+                it.dispatchReceiver = irGetField(
+                    irGet(cls.thisReceiver!!),
+                    cls.declarations.find {
+                        it is IrField && it.type.toKotlinType() == binding.moduleInstance.defaultType
+                    } as IrField
+                )
+            }
+        }
+
+        binding.resolvedDescriptor.valueParameters.map { value ->
             parameters.find {
                 val type = when (it) {
                     is IrGetValue -> it.descriptor.type
@@ -366,18 +395,16 @@ class ComponentIrGenerator(
         return call
     }
 
-    private fun IrBlockBodyBuilder.generateScopedProvider(
+    private fun IrBlockBodyBuilder.generateScopedBinding(
         cls: IrClass,
-        provider: FunctionDescriptor,
+        binding: Binding,
         parameters: List<IrDeclarationReference>
     ): IrExpression {
-        val field = cls.declarations.find {
-            it is IrField && it.name == provider.providerFieldName()
-        } as IrField
+        val field = scopedProviderFields[binding]!!
         val getFunc = scopedProviders[field]?.functions?.find { it.name.asString() == "get" }
         return irCall(getFunc!!.symbol).also { call ->
             call.dispatchReceiver = irGetField(irGet(cls.thisReceiver!!), field)
-            provider.valueParameters.map { value ->
+            binding.resolvedDescriptor.valueParameters.map { value ->
                 parameters.find {
                     val type = when (it) {
                         is IrGetValue -> it.descriptor.type

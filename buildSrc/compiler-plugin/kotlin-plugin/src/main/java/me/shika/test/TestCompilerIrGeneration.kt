@@ -1,9 +1,6 @@
-package me.shika.test.ir
+package me.shika.test
 
-import me.shika.test.DAGGER_MODULE_INSTANCES
-import me.shika.test.DAGGER_RESOLUTION_RESULT
-import me.shika.test.scopeAnnotations
-import me.shika.test.warn
+import me.shika.test.ir.ComponentIrGenerator
 import org.jetbrains.kotlin.backend.common.BackendContext
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
@@ -38,10 +35,9 @@ class TestCompilerIrGeneration(val reporter: MessageCollector): IrGenerationExte
 
         val moduleInstances = bindingContext[DAGGER_MODULE_INSTANCES, descriptor] ?: return
         val resolveResult = bindingContext[DAGGER_RESOLUTION_RESULT, descriptor] ?: return
-        // TODO Cache in declaration checker
-        val scopedBindings = resolveResult.flatMap { it.second }
-            .distinct()
-            .filter { it.scopeAnnotations().isNotEmpty() }
+        val scopedBindings = bindingContext[DAGGER_SCOPED_BINDINGS, descriptor] ?: return
+
+        reporter.warn("Generating for ${irClass.descriptor}")
 
         val generator = ComponentIrGenerator(
             irClass = irClass,

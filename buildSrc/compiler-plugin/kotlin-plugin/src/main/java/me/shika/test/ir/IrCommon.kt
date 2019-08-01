@@ -1,5 +1,6 @@
 package me.shika.test.ir
 
+import me.shika.test.TestCompilerIrGeneration
 import org.jetbrains.kotlin.backend.common.BackendContext
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality

@@ -1,17 +1,15 @@
 package me.shika.test
 
-import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity.*
+import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity.WARNING
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
-import org.jetbrains.kotlin.codegen.ExpressionCodegen
-import org.jetbrains.kotlin.codegen.FunctionGenerationStrategy
-import org.jetbrains.kotlin.codegen.ImplementationBodyCodegen
-import org.jetbrains.kotlin.codegen.OwnerKind
-import org.jetbrains.kotlin.codegen.StackValue
+import org.jetbrains.kotlin.codegen.*
 import org.jetbrains.kotlin.codegen.context.ClassContext
 import org.jetbrains.kotlin.codegen.extensions.ExpressionCodegenExtension
-import org.jetbrains.kotlin.codegen.writeSyntheticClassMetadata
-import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor.Kind.*
+import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor.Kind.SYNTHESIZED
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.Modality
+import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.impl.ClassConstructorDescriptorImpl
 import org.jetbrains.kotlin.descriptors.impl.SimpleFunctionDescriptorImpl
@@ -119,78 +117,78 @@ class TestCompilerCodegenExtension(private val reporter: MessageCollector): Expr
 
         val selfType = codegen.typeMapper.mapType(this)
 
-        resolveResult.forEach { (binding, providers) ->
-            val functionDescriptor = SimpleFunctionDescriptorImpl.create(
-                this,
-                Annotations.EMPTY,
-                binding.name,
-                SYNTHESIZED,
-                binding.source
-            ).apply {
-                initialize(
-                    null,
-                    thisAsReceiverParameter,
-                    mutableListOf(),
-                    binding.valueParameters,
-                    binding.returnType,
-                    Modality.FINAL,
-                    Visibilities.PUBLIC
-                )
-            }
-
-            codegen.generateFunction(functionDescriptor) {
-                val returnType = asmType(binding.returnType!!)
-
-                val variableLength = providers.size
-                reporter.warn("Repeating for $variableLength")
-
-                (variableLength downTo 1).forEach {
-                    val func = providers[it - 1]
-                    val obj = func.containingDeclaration as ClassDescriptor
-                    val returnType = asmType(func.returnType!!)
-                    val moduleType = asmType(obj.defaultType)
-
-                    if (moduleInstances.contains(obj)) {
-                        v.load(0, selfType)
-                        v.getfield(
-                            selfType.internalName,
-                            obj.name.asString().decapitalize(),
-                            moduleType.descriptor
-                        )
-                    } else {
-                        v.getstatic(
-                            moduleType.internalName,
-                            "INSTANCE",
-                            moduleType.descriptor
-                        )
-                    }
-
-                    val params = func.valueParameters.map { it.type }
-                    val providerIndices = params.map { paramType ->
-                        providers.indexOfFirst {
-                            it.returnType?.constructor == paramType.constructor
-                                    && it.returnType?.arguments == paramType.arguments
-                        }
-                    }
-
-                    providerIndices.forEach {
-                        v.load(it + 1, asmType(providers[it].returnType!!))
-                    }
-
-                    v.invokevirtual(
-                        moduleType.internalName,
-                        "${func.name}",
-                        "(${params.joinToString("") { asmType(it).descriptor }})${returnType.descriptor}",
-                        false
-                    )
-
-                    v.store(it, returnType)
-                }
-
-                v.load(1, returnType)
-                v.areturn(returnType)
-            }
-        }
+//        resolveResult.forEach { (binding, providers) ->
+//            val functionDescriptor = SimpleFunctionDescriptorImpl.create(
+//                this,
+//                Annotations.EMPTY,
+//                binding.name,
+//                SYNTHESIZED,
+//                binding.source
+//            ).apply {
+//                initialize(
+//                    null,
+//                    thisAsReceiverParameter,
+//                    mutableListOf(),
+//                    binding.valueParameters,
+//                    binding.returnType,
+//                    Modality.FINAL,
+//                    Visibilities.PUBLIC
+//                )
+//            }
+//
+//            codegen.generateFunction(functionDescriptor) {
+//                val returnType = asmType(binding.returnType!!)
+//
+//                val variableLength = providers.size
+//                reporter.warn("Repeating for $variableLength")
+//
+//                (variableLength downTo 1).forEach {
+//                    val func = providers[it - 1]
+//                    val obj = func.containingDeclaration as ClassDescriptor
+//                    val returnType = asmType(func.returnType!!)
+//                    val moduleType = asmType(obj.defaultType)
+//
+//                    if (moduleInstances.contains(obj)) {
+//                        v.load(0, selfType)
+//                        v.getfield(
+//                            selfType.internalName,
+//                            obj.name.asString().decapitalize(),
+//                            moduleType.descriptor
+//                        )
+//                    } else {
+//                        v.getstatic(
+//                            moduleType.internalName,
+//                            "INSTANCE",
+//                            moduleType.descriptor
+//                        )
+//                    }
+//
+//                    val params = func.valueParameters.map { it.type }
+//                    val providerIndices = params.map { paramType ->
+//                        providers.indexOfFirst {
+//                            it.returnType?.constructor == paramType.constructor
+//                                    && it.returnType?.arguments == paramType.arguments
+//                        }
+//                    }
+//
+//                    providerIndices.forEach {
+//                        v.load(it + 1, asmType(providers[it].returnType!!))
+//                    }
+//
+//                    v.invokevirtual(
+//                        moduleType.internalName,
+//                        "${func.name}",
+//                        "(${params.joinToString("") { asmType(it).descriptor }})${returnType.descriptor}",
+//                        false
+//                    )
+//
+//                    v.store(it, returnType)
+//                }
+//
+//                v.load(1, returnType)
+//                v.areturn(returnType)
+//            }
+//        }
     }
 
     private fun ImplementationBodyCodegen.generateFunction(f: FunctionDescriptor, body: ExpressionCodegen.() -> Unit) {
