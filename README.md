@@ -24,6 +24,7 @@ Right now I have implemented the concept of:
 TODO (in any order):
 - Component dependencies
 - Support of `@BindsInstance` for components
+- `Qualifier`
 - `Lazy` and `Provider` support
 - Subcomponents
 - ... the rest
