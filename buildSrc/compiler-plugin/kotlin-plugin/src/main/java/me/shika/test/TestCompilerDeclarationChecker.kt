@@ -189,7 +189,12 @@ class TestCompilerDeclarationChecker(
         return modules
             ?.filterIsInstance<ClassDescriptor>()
             ?.flatMap { module ->
-                module.unsubstitutedMemberScope.getDescriptorsFiltered(DescriptorKindFilter.FUNCTIONS)
+                val companionBindings = module.companionObjectDescriptor
+                    ?.unsubstitutedMemberScope
+                    ?.getDescriptorsFiltered(DescriptorKindFilter.FUNCTIONS)
+                    ?: emptyList()
+
+                (module.unsubstitutedMemberScope.getDescriptorsFiltered(DescriptorKindFilter.FUNCTIONS) + companionBindings)
                     .filter { it.annotations.hasAnnotation(FqName("dagger.Provides")) }
                     .filterIsInstance<FunctionDescriptor>()
                     .map {

@@ -265,11 +265,11 @@ class ComponentIrGenerator(
         resolveResult.filter { it.endpoint is Endpoint.Exposed }.forEach { (endpoint, bindings) ->
             endpoint as Endpoint.Exposed
             irClass.addFunction(
-                name = endpoint.value.name.asString(),
-                returnType = endpoint.value.returnType!!.toIrType()
+                name = endpoint.source.name.asString(),
+                returnType = endpoint.source.returnType!!.toIrType()
             ).also { func ->
                 func.dispatchReceiverParameter = irClass.thisReceiver
-                endpoint.value.valueParameters.forEach {
+                endpoint.source.valueParameters.forEach {
                     func.addValueParameter(
                         name = it.name.asString(),
                         type = it.type.toIrType()
@@ -285,7 +285,7 @@ class ComponentIrGenerator(
         }
 
         resolveResult.filter { it.endpoint is Endpoint.Injected }
-            .groupBy { (it.endpoint as Endpoint.Injected).function }
+            .groupBy { (it.endpoint as Endpoint.Injected).source }
             .forEach { (function, results) ->
                 irClass.addFunction(
                     name = function.name.asString(),

@@ -5,24 +5,28 @@ import javax.inject.Inject
 import javax.inject.Scope
 
 @TestScope
-@Component(modules = [TestModule::class, TestModuleInstance::class])
+@Component(modules = [TestModuleInstance::class, TestModule::class, AbstractModule::class])
 interface Main {
     fun provider(): String
     fun providerLambda(): () -> String
     fun injected(): Injected
     fun scopedInjected(): ScopedInjected
     fun inject(instance: Injected2)
+    fun test2(): Long
 }
 
 @Module
 object TestModule {
+    @JvmStatic
     @Provides
     fun string(int: Int): String = int.toString()
 
     @TestScope
+    @JvmStatic
     @Provides
     fun lambdaString(int: Int, string: String): () -> String = { int.toString() + string }.also { println("Invoked lambdaString") }
 
+    @JvmStatic
     @Provides
     fun lambdaInt(int: Int): () -> Int = { int }
 }
@@ -43,8 +47,8 @@ class ScopedInjected @Inject constructor(val lambda: () -> String) {
 class Injected2 {
     @Inject
     lateinit var lambdaString: () -> String
-    @Inject
-    var int: Int = 0
+    @set:Inject
+    var test1: Int? = null
     @Inject
     lateinit var lambdaInt: () -> Int
     @Inject
@@ -57,13 +61,26 @@ class Injected2 {
 class TestModuleInstance(val int: Int) {
     @TestScope
     @Provides
-    fun int(): Int = int.also { println("Invoked int") }
+    fun integer(): Int = int.also { println("Invoked int") }
 }
 
 @Scope
 annotation class TestScope
 
+@Module
+abstract class AbstractModule {
+
+    @Module
+    companion object {
+        @TestScope
+        @JvmStatic
+        @Provides
+        fun test12(): Long = 666L
+    }
+}
+
 fun main(args: Array<String>) {
+//    val component = DaggerMain.builder().testModuleInstance(TestModuleInstance(3)).build()
     val component = Main.Component(TestModuleInstance(3))
     println(component.injected().lambda())
     println(component.injected().lambda())
@@ -71,7 +88,10 @@ fun main(args: Array<String>) {
     println(component.scopedInjected().lambda())
 
     println(component.providerLambda()())
+
     val injected2 = Injected2()
     component.inject(injected2)
     println(injected2.lambdaString())
+
+    println(component.test2())
 }

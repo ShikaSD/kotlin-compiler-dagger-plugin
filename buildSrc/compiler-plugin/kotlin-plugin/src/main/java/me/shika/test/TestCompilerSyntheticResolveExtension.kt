@@ -2,7 +2,12 @@ package me.shika.test
 
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
-import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.descriptors.ClassifierDescriptor
+import org.jetbrains.kotlin.descriptors.Modality.ABSTRACT
+import org.jetbrains.kotlin.descriptors.Modality.FINAL
+import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.impl.ClassConstructorDescriptorImpl
@@ -52,9 +57,9 @@ class TestCompilerSyntheticResolveExtension(
             val modules = componentAnnotation.componentModules()
                 .mapNotNull {
                     val value = it.getArgumentType(ctx.moduleDescriptor)
-                    value.constructor.declarationDescriptor
+                    value.constructor.declarationDescriptor as? ClassDescriptor
                 }
-            val moduleInstances = modules.filter { !isObject(it) }
+            val moduleInstances = modules.filter { !isObject(it) && it.modality != ABSTRACT }
             reporter.warn("Has $moduleInstances module instances")
 
             val classDescriptor = SyntheticClassOrObjectDescriptor(
@@ -64,7 +69,7 @@ class TestCompilerSyntheticResolveExtension(
                 name = name,
                 source = thisDescriptor.source,
                 outerScope = lexicalScope,
-                modality = Modality.FINAL,
+                modality = FINAL,
                 visibility = Visibilities.PUBLIC,
                 annotations = Annotations.EMPTY,
                 constructorVisibility = Visibilities.PUBLIC,
@@ -124,7 +129,7 @@ val DAGGER_COMPONENT_ANNOTATION = FqName("dagger.Component")
 val DAGGER_COMPONENT_IMPL = Name.identifier("Component")
 
 fun ClassDescriptor.componentAnnotation() =
-    if (modality == Modality.ABSTRACT && this !is AnnotationDescriptor) {
+    if (modality == ABSTRACT && this !is AnnotationDescriptor) {
         annotations.findAnnotation(DAGGER_COMPONENT_ANNOTATION)
     } else {
         null
