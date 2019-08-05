@@ -1,3 +1,4 @@
+import dagger.BindsInstance
 import dagger.Component
 import dagger.Module
 import dagger.Provides
@@ -7,12 +8,21 @@ import javax.inject.Scope
 @TestScope
 @Component(modules = [TestModuleInstance::class, TestModule::class, AbstractModule::class])
 interface Main {
+    @Component.Factory
+    interface Factory {
+        fun build(
+            testModuleInstance: TestModuleInstance,
+            @BindsInstance test12: List<Long>
+        ): Main
+    }
+
     fun provider(): String
     fun providerLambda(): () -> String
     fun injected(): Injected
     fun scopedInjected(): ScopedInjected
     fun inject(instance: Injected2)
     fun test2(): Long
+//    fun test3(): List<Long>
 }
 
 @Module
@@ -80,7 +90,7 @@ abstract class AbstractModule {
 }
 
 fun main(args: Array<String>) {
-//    val component = DaggerMain.builder().testModuleInstance(TestModuleInstance(3)).build()
+//    val component = DaggerMain.factory().build(TestModuleInstance(3), listOf())
     val component = Main.Component(TestModuleInstance(3))
     println(component.injected().lambda())
     println(component.injected().lambda())
@@ -94,4 +104,5 @@ fun main(args: Array<String>) {
     println(injected2.lambdaString())
 
     println(component.test2())
+//    println(component.test3())
 }
