@@ -126,7 +126,7 @@ class TestCompilerSyntheticResolveExtension(
 }
 
 val DAGGER_COMPONENT_ANNOTATION = FqName("dagger.Component")
-val DAGGER_COMPONENT_IMPL = Name.identifier("Component")
+val DAGGER_COMPONENT_IMPL = Name.identifier("DaggerComponent")
 
 fun ClassDescriptor.componentAnnotation() =
     if (modality == ABSTRACT && this !is AnnotationDescriptor) {

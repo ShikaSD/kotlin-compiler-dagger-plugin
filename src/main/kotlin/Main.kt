@@ -7,7 +7,7 @@ import javax.inject.Scope
 
 @TestScope
 @Component(modules = [TestModuleInstance::class, TestModule::class, AbstractModule::class])
-interface Main {
+interface Main : Common {
     @Component.Factory
     interface Factory {
         fun build(
@@ -16,13 +16,16 @@ interface Main {
         ): Main
     }
 
-    fun provider(): String
-    fun providerLambda(): () -> String
-    fun injected(): Injected
     fun scopedInjected(): ScopedInjected
     fun inject(instance: Injected2)
     fun test2(): Long
 //    fun test3(): List<Long>
+}
+
+interface Common {
+    fun provider(): String
+    fun providerLambda(): () -> String
+    fun injected(): Injected
 }
 
 @Module
@@ -91,7 +94,7 @@ abstract class AbstractModule {
 
 fun main(args: Array<String>) {
 //    val component = DaggerMain.factory().build(TestModuleInstance(3), listOf())
-    val component = Main.Component(TestModuleInstance(3))
+    val component = Main.DaggerComponent(TestModuleInstance(3))
     println(component.injected().lambda())
     println(component.injected().lambda())
     println(component.scopedInjected().lambda())
@@ -105,4 +108,14 @@ fun main(args: Array<String>) {
 
     println(component.test2())
 //    println(component.test3())
+}
+
+interface Test {
+    fun test1()
+}
+
+class Test1: Test {
+    override fun test1() {
+
+    }
 }

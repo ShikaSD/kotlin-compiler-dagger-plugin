@@ -14,7 +14,7 @@ import org.jetbrains.kotlin.config.JVMConfigurationKeys.IR
 import org.jetbrains.kotlin.extensions.CompilerConfigurationExtension
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
 import org.jetbrains.kotlin.resolve.extensions.SyntheticResolveExtension
-import org.jetbrains.kotlin.resolve.jvm.extensions.PackageFragmentProviderExtension
+import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 
 @AutoService(ComponentRegistrar::class)
 class TestCompilerComponentRegistrar: ComponentRegistrar {
@@ -42,9 +42,9 @@ class TestCompilerComponentRegistrar: ComponentRegistrar {
             TestCompilerCodegenExtension(reporter)
         )
 
-        PackageFragmentProviderExtension.registerExtension(
+        AnalysisHandlerExtension.registerExtension(
             project,
-            TestCompilerPackageFragmentProviderExtension(reporter)
+            TestCompilerAnalysisExtension(reporter)
         )
 
         SyntheticResolveExtension.registerExtension(

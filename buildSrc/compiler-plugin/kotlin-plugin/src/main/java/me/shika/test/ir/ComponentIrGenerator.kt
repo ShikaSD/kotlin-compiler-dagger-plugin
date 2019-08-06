@@ -268,6 +268,7 @@ class ComponentIrGenerator(
                 name = endpoint.source.name.asString(),
                 returnType = endpoint.source.returnType!!.toIrType()
             ).also { func ->
+                func.overriddenSymbols += externalSymbolTable.referenceSimpleFunction(endpoint.source)
                 func.dispatchReceiverParameter = irClass.thisReceiver
                 endpoint.source.valueParameters.forEach {
                     func.addValueParameter(
@@ -291,6 +292,7 @@ class ComponentIrGenerator(
                     name = function.name.asString(),
                     returnType = function.returnType!!.toIrType()
                 ).also { func ->
+                    func.overriddenSymbols += externalSymbolTable.referenceSimpleFunction(function)
                     func.dispatchReceiverParameter = irClass.thisReceiver
                     function.valueParameters.forEach {
                         func.addValueParameter(

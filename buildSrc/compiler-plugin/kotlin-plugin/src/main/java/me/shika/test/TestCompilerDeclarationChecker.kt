@@ -47,7 +47,7 @@ class TestCompilerDeclarationChecker(
             reporter.warn("Found dagger component $descriptor")
             val implClass = descriptor.unsubstitutedMemberScope
                 .getDescriptorsFiltered(DescriptorKindFilter.CLASSIFIERS) {
-                    it.asString() == "Component" // haxx
+                    it == DAGGER_COMPONENT_IMPL // haxx
                 }.first() as ClassDescriptor
 
             val endpoints = descriptor.findEndpoints(context.trace)
