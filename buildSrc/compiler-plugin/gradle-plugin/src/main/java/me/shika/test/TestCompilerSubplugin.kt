@@ -21,9 +21,10 @@ class TestCompilerSubplugin: KotlinGradleSubplugin<AbstractCompile> {
         kotlinCompilation: KotlinCompilation<KotlinCommonOptions>?
     ): List<SubpluginOption> {
         val extension = project.extensions.findByType(TestCompilerExtension::class.java) ?: TestCompilerExtension()
-        val sources = File(project.buildDir, "generated/source/di-compiler/")
-
-        kotlinCompile.source(sources)
+        val sourceSet = kotlinCompilation?.defaultSourceSet
+        val sources = File(project.buildDir, "generated/source/di-compiler/${sourceSet?.name}/")
+        sourceSet?.kotlin?.srcDir(sources)
+        sourceSet?.kotlin?.exclude { it.file.startsWith(sources) }// FIXME now tries to compile them
 
         return listOf(
             SubpluginOption(
@@ -48,5 +49,4 @@ class TestCompilerSubplugin: KotlinGradleSubplugin<AbstractCompile> {
 
     override fun isApplicable(project: Project, task: AbstractCompile): Boolean =
         project.plugins.hasPlugin(TestCompilerPlugin::class.java)
-
 }

@@ -2,6 +2,7 @@ package me.shika.test
 
 import com.google.auto.service.AutoService
 import me.shika.test.TestCommandLineProcessor.Companion.KEY_ENABLED
+import me.shika.test.TestCommandLineProcessor.Companion.KEY_SOURCES
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
@@ -23,6 +24,7 @@ class TestCompilerComponentRegistrar: ComponentRegistrar {
         if (configuration[KEY_ENABLED] != true) {
             return
         }
+        val sourcesDir = configuration[KEY_SOURCES]
 
         CompilerConfigurationExtension.registerExtension(
             project,
@@ -44,7 +46,7 @@ class TestCompilerComponentRegistrar: ComponentRegistrar {
 
         AnalysisHandlerExtension.registerExtension(
             project,
-            TestCompilerAnalysisExtension(reporter)
+            TestCompilerAnalysisExtension(sourcesDir = sourcesDir)
         )
 
         SyntheticResolveExtension.registerExtension(

@@ -108,14 +108,6 @@ fun main(args: Array<String>) {
 
     println(component.test2())
 //    println(component.test3())
-}
 
-interface Test {
-    fun test1()
-}
-
-class Test1: Test {
-    override fun test1() {
-
-    }
+    TestGen()
 }
