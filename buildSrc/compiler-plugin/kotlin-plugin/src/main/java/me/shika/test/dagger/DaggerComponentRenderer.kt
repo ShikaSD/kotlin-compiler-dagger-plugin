@@ -21,8 +21,10 @@ class DaggerComponentRenderer(
     }
 
     fun render(results: List<ResolveResult>): List<File> = listOf(
-//        fileOf(File(sourcesDir, "test.kt"), "\nclass Dagger${componentDescriptor.definition.name}")
-    )
+        fileOf(File(sourcesDir, "test.kt"), "\nclass Dagger${componentDescriptor.definition.name}")
+    ).also {
+        println(results)
+    }
 
     fun fileOf(path: File, text: String) =
         path.also { path.writeText(text) }

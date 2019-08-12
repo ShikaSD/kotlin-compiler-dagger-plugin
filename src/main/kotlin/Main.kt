@@ -109,5 +109,4 @@ fun main(args: Array<String>) {
 //    println(component.test2())
 ////    println(component.test3())
 //
-    TestGen()
 }
