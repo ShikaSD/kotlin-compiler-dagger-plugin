@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.name.Name
 
 data class ResolveResult(val endpoint: Endpoint, val bindings: Set<Binding>)
@@ -29,9 +30,23 @@ sealed class Injectable {
 }
 
 sealed class Binding {
-    data class InstanceFunction(val moduleInstance: ClassDescriptor, val descriptor: FunctionDescriptor): Binding()
-    data class StaticFunction(val descriptor: FunctionDescriptor): Binding()
-    data class Constructor(val descriptor: ClassConstructorDescriptor): Binding()
+    abstract val scopes: List<AnnotationDescriptor>
+
+    data class InstanceFunction(
+        val moduleInstance: ClassDescriptor,
+        val descriptor: FunctionDescriptor,
+        override val scopes: List<AnnotationDescriptor>
+    ): Binding()
+
+    data class StaticFunction(
+        val descriptor: FunctionDescriptor,
+        override val scopes: List<AnnotationDescriptor>
+    ): Binding()
+
+    data class Constructor(
+        val descriptor: ClassConstructorDescriptor,
+        override val scopes: List<AnnotationDescriptor>
+    ): Binding()
 
     val resolvedDescriptor get() = when (this) {
         is InstanceFunction -> descriptor

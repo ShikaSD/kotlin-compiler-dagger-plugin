@@ -1,20 +1,33 @@
 package me.shika.test
 
+import me.shika.test.dagger.*
+import me.shika.test.resolver.ResolverContext
 import org.jetbrains.kotlin.analyzer.AnalysisResult
+import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.com.intellij.openapi.editor.Document
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
+import org.jetbrains.kotlin.com.intellij.openapi.vfs.StandardFileSystems
+import org.jetbrains.kotlin.com.intellij.openapi.vfs.VirtualFileManager
 import org.jetbrains.kotlin.com.intellij.openapi.vfs.local.CoreLocalFileSystem
 import org.jetbrains.kotlin.com.intellij.psi.PsiManager
 import org.jetbrains.kotlin.com.intellij.psi.SingleRootFileViewProvider
 import org.jetbrains.kotlin.container.ComponentProvider
+import org.jetbrains.kotlin.container.get
 import org.jetbrains.kotlin.context.ProjectContext
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.classRecursiveVisitor
+import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
+import org.jetbrains.kotlin.resolve.lazy.ResolveSession
 import java.io.File
 
-class TestCompilerAnalysisExtension(val sourcesDir: File?) : AnalysisHandlerExtension {
+class TestCompilerAnalysisExtension(
+    private val sourcesDir: File,
+    private val reporter: MessageCollector
+) : AnalysisHandlerExtension {
     override fun doAnalysis(
         project: Project,
         module: ModuleDescriptor,
@@ -23,28 +36,43 @@ class TestCompilerAnalysisExtension(val sourcesDir: File?) : AnalysisHandlerExte
         bindingTrace: BindingTrace,
         componentProvider: ComponentProvider
     ): AnalysisResult? {
-        val mutatedFiles = mutableListOf<Pair<KtFile, KtFile>>()
-        val addedFiles = mutableListOf<KtFile>()
-//        files.forEach { file ->
-//            file.accept(
-//                classRecursiveVisitor { ktClass ->
-//                    val annotations = ktClass.annotationEntries.map {
-//                        bindingTrace[BindingContext.ANNOTATION, it]
-//                    }
-//                    val componentAnnotation = annotations.find { it?.fqName == DAGGER_COMPONENT_ANNOTATION }
-//                    val modules = componentAnnotation?.componentModules()
-//                        ?.mapNotNull {
-//                            val value = it.getArgumentType(module)
-//                            value.constructor.declarationDescriptor as? ClassDescriptor
-//                        }
-//                    val moduleInstances = modules?.filter {
-//                        !DescriptorUtils.isObject(it) && it.modality != Modality.ABSTRACT
-//                    }
-//                }
-//            )
-//        }
+        val addedFiles = mutableListOf<File>()
+        val resolveSession = componentProvider.get<ResolveSession>()
+        val resolverContext = ResolverContext(module, bindingTrace, resolveSession)
 
-        sourcesDir?.mkdirs() ?: return null
+        files.forEach { file ->
+            file.accept(
+                classRecursiveVisitor { ktClass ->
+                    println("Visiting class ${ktClass.name}")
+                    val classDescriptor = resolveSession.resolveToDescriptor(ktClass) as ClassDescriptor
+                    if (classDescriptor.isComponent()) {
+                        println("Class ${ktClass.name} is component")
+                        val component = DaggerComponentDescriptor(
+                            bindingTrace[BindingContext.CLASS, ktClass]!!,
+                            resolverContext
+                        )
+                        val bindings = DaggerBindingDescriptor(component)
+                        val resolver = DaggerBindingResolver(reporter, bindings)
+                        val renderer = DaggerComponentRenderer(component, reporter, sourcesDir)
+                        addedFiles += renderer.render(resolver.resolve())
+                    }
+                }
+            )
+        }
+
+//        if (addedFiles.isEmpty()) return null
+
+        val fileManager = VirtualFileManager.getInstance()
+        val localFS = fileManager.getFileSystem(StandardFileSystems.FILE_PROTOCOL)
+        val psiManager = PsiManager.getInstance(project)
+        val addedKtFiles = addedFiles.map {
+            val virtualFile = localFS.findFileByPath(it.absolutePath)!!
+            KtFile(
+                viewProvider = SingleRootFileViewProvider(psiManager, virtualFile),
+                isCompiled = false
+            )
+        }.toMutableList()
+
         val testFile = File(sourcesDir, "testFile.kt")
         testFile.writeText("""
             |class TestGen {
@@ -55,7 +83,7 @@ class TestCompilerAnalysisExtension(val sourcesDir: File?) : AnalysisHandlerExte
         """.trimMargin())
         val virtualFile = CoreLocalFileSystem().findFileByIoFile(testFile)!!
 
-        addedFiles += KtFile(
+        addedKtFiles += KtFile(
             viewProvider = object : SingleRootFileViewProvider(PsiManager.getInstance(project), virtualFile) {
                 var textUpdated = false
                 override fun getDocument(): Document? = super.getDocument().also {
@@ -71,14 +99,7 @@ class TestCompilerAnalysisExtension(val sourcesDir: File?) : AnalysisHandlerExte
         )
 
         files as MutableList<KtFile>
-        mutatedFiles.forEach {
-            val index = files.indexOf(it.first)
-            if (index < 0) return@forEach
-            files.removeAt(index)
-            files.add(index, it.second)
-        }
-
-        files.addAll(addedFiles)
+        files.addAll(addedKtFiles)
 
         return null
     }
@@ -89,7 +110,7 @@ class TestCompilerAnalysisExtension(val sourcesDir: File?) : AnalysisHandlerExte
         bindingTrace: BindingTrace,
         files: Collection<KtFile>
     ): AnalysisResult? {
-        println("Analysis completed")
+
         return null
     }
 }

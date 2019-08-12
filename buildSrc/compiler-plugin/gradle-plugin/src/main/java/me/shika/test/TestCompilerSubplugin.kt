@@ -24,7 +24,7 @@ class TestCompilerSubplugin: KotlinGradleSubplugin<AbstractCompile> {
         val sourceSet = kotlinCompilation?.defaultSourceSet
         val sources = File(project.buildDir, "generated/source/di-compiler/${sourceSet?.name}/")
         sourceSet?.kotlin?.srcDir(sources)
-        sourceSet?.kotlin?.exclude { it.file.startsWith(sources) }// FIXME now tries to compile them
+        sourceSet?.kotlin?.exclude { it.file.startsWith(sources) }// FIXME tries to compile them
 
         return listOf(
             SubpluginOption(
