@@ -4,13 +4,17 @@ import me.shika.test.model.Binding
 import me.shika.test.model.Endpoint
 import me.shika.test.model.Injectable
 import me.shika.test.resolver.classDescriptor
+import org.jetbrains.kotlin.builtins.KotlinBuiltIns
+import org.jetbrains.kotlin.contracts.parsing.isEqualsDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.getDescriptorsFiltered
+import org.jetbrains.kotlin.types.typeUtil.isInt
 
 class DaggerBindingDescriptor(
     val componentDescriptor: DaggerComponentDescriptor
@@ -38,17 +42,19 @@ class DaggerBindingDescriptor(
         }
     }
 
-    private fun findEndpoints(): List<Endpoint> {
+    private fun findEndpoints(): Set<Endpoint> {
         val scope = componentDescriptor.definition.unsubstitutedMemberScope
         val functions = scope.getDescriptorsFiltered(DescriptorKindFilter.FUNCTIONS)
             .asSequence()
             .filterIsInstance<FunctionDescriptor>()
-            .filter { !it.builtIns.isMemberOfAny(it) }
+            .filter {
+                !it.isEqualsDescriptor() && !it.isHashCodeDescriptor() && !it.isToStringDescriptor()
+            }
 
         val exposedTypes = functions.getExposedTypes()
         val injectables = functions.getInjectedTypes()
 
-        return (exposedTypes + injectables).toList()
+        return (exposedTypes + injectables).toSet()
     }
 
     private fun Sequence<FunctionDescriptor>.getExposedTypes() =
@@ -85,3 +91,11 @@ val PROVIDES_FQ_NAME = FqName("dagger.Provides")
 
 private fun ClassDescriptor.allDescriptors(kindFilter: DescriptorKindFilter) =
     unsubstitutedMemberScope.getDescriptorsFiltered(kindFilter) { true }
+
+private fun DeclarationDescriptor.isHashCodeDescriptor() =
+    this is FunctionDescriptor && name == Name.identifier("hashCode")
+        && returnType?.isInt() == true && valueParameters.isEmpty()
+
+private fun DeclarationDescriptor.isToStringDescriptor() =
+    this is FunctionDescriptor && name == Name.identifier("toString")
+        && KotlinBuiltIns.isString(returnType) && valueParameters.isEmpty()

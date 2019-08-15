@@ -50,12 +50,21 @@ class TestCompilerAnalysisExtension(
                         println("Class ${ktClass.name} is component")
                         val component = DaggerComponentDescriptor(
                             classDescriptor,
+                            file,
                             resolverContext
                         )
                         val bindings = DaggerBindingDescriptor(component)
                         val resolver = DaggerBindingResolver(reporter, bindings)
-                        val renderer = DaggerComponentRenderer(component, reporter, sourcesDir)
-                        addedFiles += renderer.render(resolver.resolve())
+                        val renderer = DaggerComponentRenderer(component, reporter)
+
+                        val fileSpec = renderer.render(resolver.resolve())
+                        fileSpec.writeTo(sourcesDir)
+                        val filePath = fileSpec.packageName.split('.')
+                            .dropLastWhile { it.isEmpty() }
+                            .takeIf { !it.isEmpty() }
+                            ?.joinToString(File.separator, postfix = File.separator)
+                            .orEmpty()
+                        addedFiles += sourcesDir.resolve(filePath + "${fileSpec.name}.kt")
                     }
                 }
             )
@@ -67,6 +76,7 @@ class TestCompilerAnalysisExtension(
         val localFS = fileManager.getFileSystem(StandardFileSystems.FILE_PROTOCOL)
         val psiManager = PsiManager.getInstance(project)
         val addedKtFiles = addedFiles.map {
+            println(it)
             val virtualFile = localFS.findFileByPath(it.absolutePath)!!
             KtFile(
                 viewProvider = SingleRootFileViewProvider(psiManager, virtualFile),
@@ -79,7 +89,7 @@ class TestCompilerAnalysisExtension(
 
         generatedFiles = true
 
-        return AnalysisResult.RetryWithAdditionalJavaRoots(bindingTrace.bindingContext, module, emptyList()) // Eat my files pls
+        return AnalysisResult.RetryWithAdditionalJavaRoots(bindingTrace.bindingContext, module, emptyList()) // Repeat with my files pls
     }
 
     override fun analysisCompleted(

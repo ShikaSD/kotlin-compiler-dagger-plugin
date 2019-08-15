@@ -10,8 +10,10 @@ import org.jetbrains.kotlin.name.Name
 data class ResolveResult(val endpoint: Endpoint, val bindings: Set<Binding>)
 
 sealed class Endpoint {
-    data class Exposed(val source: FunctionDescriptor) : Endpoint()
-    data class Injected(val source: FunctionDescriptor, val value: Injectable) : Endpoint()
+    abstract val source: FunctionDescriptor
+
+    data class Exposed(override val source: FunctionDescriptor) : Endpoint()
+    data class Injected(override val source: FunctionDescriptor, val value: Injectable) : Endpoint()
 
     val type get() = when (this) {
         is Injected -> value.type

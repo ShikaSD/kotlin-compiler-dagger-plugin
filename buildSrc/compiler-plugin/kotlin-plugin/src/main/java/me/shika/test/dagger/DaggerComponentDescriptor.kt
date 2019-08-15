@@ -5,12 +5,14 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.annotations.argumentValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue
 
 class DaggerComponentDescriptor(
     val definition: ClassDescriptor,
+    val file: KtFile,
     val context: ResolverContext
 ) {
     val annotation = definition.componentAnnotation()!!

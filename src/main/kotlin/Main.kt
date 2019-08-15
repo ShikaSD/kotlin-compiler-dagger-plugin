@@ -25,6 +25,7 @@ interface Main : Common {
 interface Common {
     fun provider(): String
     fun providerLambda(): () -> String
+    fun providerLambdaInt(): () -> Int
     fun injected(): Injected
 }
 
