@@ -7,7 +7,9 @@ import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.name.Name
 
-data class ResolveResult(val endpoint: Endpoint, val bindings: Set<Binding>)
+data class GraphNode(val value: Binding, val dependencies: List<GraphNode>)
+
+data class ResolveResult(val endpoint: Endpoint, val bindings: GraphNode)
 
 sealed class Endpoint {
     abstract val source: FunctionDescriptor
