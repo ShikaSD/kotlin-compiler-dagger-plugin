@@ -95,19 +95,17 @@ abstract class AbstractModule {
 
 fun main(args: Array<String>) {
 //    val component = DaggerMain.factory().build(TestModuleInstance(3), listOf())
-    val component = DaggerMain::class.java
-//    println(component.injected().lambda())
-//    println(component.injected().lambda())
-//    println(component.scopedInjected().lambda())
-//    println(component.scopedInjected().lambda())
-//
-//    println(component.providerLambda()())
-//
-//    val injected2 = Injected2()
+    val component = DaggerMain(TestModuleInstance(3))
+    println(component.injected().lambda())
+    println(component.injected().lambda())
+    println(component.scopedInjected().lambda())
+    println(component.scopedInjected().lambda())
+
+    println(component.providerLambda()())
+
+    val injected2 = Injected2()
 //    component.inject(injected2)
 //    println(injected2.lambdaString())
-//
-//    println(component.test2())
-////    println(component.test3())
-//
+
+    println(component.test2())
 }

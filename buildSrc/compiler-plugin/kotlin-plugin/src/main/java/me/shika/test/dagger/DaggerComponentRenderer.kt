@@ -36,6 +36,7 @@ class DaggerComponentRenderer(
     private fun renderComponent(results: List<ResolveResult>): TypeSpec =
         TypeSpec.classBuilder(componentDescriptor.nameString())
             .extendComponent()
+            .addModuleInstances()
             .addBindings(results)
             .build()
 
@@ -45,6 +46,26 @@ class DaggerComponentRenderer(
         } else {
             superclass(definition.className())
         }
+    }
+
+    private fun TypeSpec.Builder.addModuleInstances() = apply {
+        primaryConstructor(
+            FunSpec.constructorBuilder()
+                .addParameters(
+                    componentDescriptor.moduleInstances.map {
+                        ParameterSpec.builder(it.className().simpleName.decapitalize(), it.className())
+                            .build()
+                    }
+                )
+                .build()
+        )
+        addProperties(
+            componentDescriptor.moduleInstances.map {
+                PropertySpec.builder(it.className().simpleName.decapitalize(), it.className(), PRIVATE)
+                    .initializer(it.className().simpleName.decapitalize())
+                    .build()
+            }
+        )
     }
 
     private fun TypeSpec.Builder.addBindings(results: List<ResolveResult>) = apply {
@@ -184,7 +205,12 @@ private fun TypeSpec.Builder.addFactoryIfNeeded(componentName: ClassName, graphN
                                         parentType
                                     )
                                 }
-                                else -> CodeBlock.of("")
+                                is Binding.InstanceFunction -> {
+                                    CodeBlock.of(
+                                        "return %N.${signature.name}(${depsFactories.joinToString(",") { "${it.name}.get()" }})",
+                                        graphNode.value.moduleInstance.defaultType.typeName()?.name()?.decapitalize()
+                                    )
+                                }
                             }
                         )
                         .build()
@@ -193,18 +219,37 @@ private fun TypeSpec.Builder.addFactoryIfNeeded(componentName: ClassName, graphN
         )
 
         val spec = PropertySpec.builder(factoryMemberName, typeProvider)
-            .initializer(
-                CodeBlock.of(
-                    "%T(${depsFactories.map { it.name }.joinToString(",")})".let {
-                        if (graphNode.value.scopes.isNotEmpty()) {
-                            "dagger.internal.DoubleCheck.provider($it)"
-                        } else {
-                            it
-                        }
-                    },
-                    factoryType
+            .apply {
+                val params = depsFactories.map { it.name }.toMutableList()
+                propertySpecs.find { it.type == parentType }?.let { params += it.name }
+
+                val doubleCheckName = MemberName(
+                    ClassName("dagger.internal", "DoubleCheck"),
+                    "provider"
                 )
-            )
+
+                val args = hashMapOf(
+                    "doubleCheck" to doubleCheckName,
+                    "factoryType" to factoryType
+                )
+
+                initializer(
+                    CodeBlock.builder()
+                        .apply {
+                            addNamed(
+                                "%factoryType:T(${params.joinToString()})".let {
+                                    if (graphNode.value.scopes.isNotEmpty()) {
+                                        "%doubleCheck:M($it)"
+                                    } else {
+                                        it
+                                    }
+                                },
+                                args
+                            )
+                        }
+                        .build()
+                )
+            }
             .build()
 
         addProperty(spec)
