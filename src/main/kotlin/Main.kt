@@ -66,8 +66,8 @@ class Injected2 {
     @Inject
     lateinit var lambdaInt: () -> Int
     @Inject
-    fun setString(string: String) {
-        println("Have set $string")
+    fun setString(string: String, int: Int) {
+        println("Have set $string $int")
     }
 }
 
@@ -104,8 +104,8 @@ fun main(args: Array<String>) {
     println(component.providerLambda()())
 
     val injected2 = Injected2()
-//    component.inject(injected2)
-//    println(injected2.lambdaString())
+    component.inject(injected2)
+    println(injected2.lambdaString())
 
     println(component.test2())
 }

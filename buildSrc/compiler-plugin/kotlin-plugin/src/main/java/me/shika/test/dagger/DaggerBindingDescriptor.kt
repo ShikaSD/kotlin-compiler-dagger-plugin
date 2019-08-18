@@ -51,6 +51,8 @@ class DaggerBindingDescriptor(
                 !it.isEqualsDescriptor() && !it.isHashCodeDescriptor() && !it.isToStringDescriptor()
             }
 
+        // TODO go through each instead of filtering
+
         val exposedTypes = functions.getExposedTypes()
         val injectables = functions.getInjectedTypes()
 
@@ -62,14 +64,18 @@ class DaggerBindingDescriptor(
             .map { Endpoint.Exposed(it) }
 
     private fun Sequence<FunctionDescriptor>.getInjectedTypes() =
-        filter { it.valueParameters.isNotEmpty() }
+        filter { it.valueParameters.size == 1 && KotlinBuiltIns.isUnit(it.returnType!!)  }
             .flatMap { func ->
                 val cls = func.valueParameters.first().type.classDescriptor()!!
                 val fields =
                     cls.allDescriptors(DescriptorKindFilter.VARIABLES)
                         .asSequence()
                         .filterIsInstance<PropertyDescriptor>()
-                        .filter { it.backingField?.annotations?.hasAnnotation(INJECT_FQ_NAME) == true }
+                        .filter {
+                            it.annotations.hasAnnotation(INJECT_FQ_NAME) ||
+                                it.backingField?.annotations?.hasAnnotation(INJECT_FQ_NAME) == true ||
+                                it.setter?.annotations?.hasAnnotation(INJECT_FQ_NAME) == true
+                        }
                         .map {
                             Endpoint.Injected(func, Injectable.Property(cls, it))
                         }
@@ -77,7 +83,7 @@ class DaggerBindingDescriptor(
                 val setters = cls.allDescriptors(DescriptorKindFilter.FUNCTIONS)
                     .asSequence()
                     .filterIsInstance<FunctionDescriptor>()
-                    .filter { cls.annotations.hasAnnotation(INJECT_FQ_NAME) }
+                    .filter { it.annotations.hasAnnotation(INJECT_FQ_NAME) }
                     .map {
                         Endpoint.Injected(func, Injectable.Setter(cls, it))
                     }

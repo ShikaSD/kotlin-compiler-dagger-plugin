@@ -20,8 +20,8 @@ class DaggerBindingResolver(
         bindingDescriptor.endpoints.map { it.resolveDependencies() }
 
     private fun Endpoint.resolveDependencies(): ResolveResult {
-        val node = type!!.resolveNode()
-        return ResolveResult(this, node)
+        val nodes = types.map { it!!.resolveNode() }
+        return ResolveResult(this, nodes)
     }
 
     private fun KotlinType.resolveNode(): GraphNode {

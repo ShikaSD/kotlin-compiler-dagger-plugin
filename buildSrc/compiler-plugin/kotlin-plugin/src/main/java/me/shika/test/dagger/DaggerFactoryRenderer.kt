@@ -62,7 +62,7 @@ class DaggerFactoryRenderer(private val componentBuilder: TypeSpec.Builder, priv
 
         // Factory property in component (cached if scoped)
         val property = PropertySpec.builder(factoryMemberName, providerType)
-            .factoryProperty(factoryType, depsFactories, parentType, graphNode.value.scopes.isEmpty())
+            .factoryProperty(factoryType, depsFactories, parentType, graphNode.value.scopes.isNotEmpty())
             .build()
 
         addProperty(property)

@@ -8,7 +8,7 @@ import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 
 data class GraphNode(val value: Binding, val dependencies: List<GraphNode>)
 
-data class ResolveResult(val endpoint: Endpoint, val graph: GraphNode)
+data class ResolveResult(val endpoint: Endpoint, val graph: List<GraphNode>)
 
 sealed class Endpoint {
     abstract val source: FunctionDescriptor
@@ -16,9 +16,9 @@ sealed class Endpoint {
     data class Exposed(override val source: FunctionDescriptor) : Endpoint()
     data class Injected(override val source: FunctionDescriptor, val value: Injectable) : Endpoint()
 
-    val type get() = when (this) {
-        is Injected -> value.type
-        is Exposed -> source.returnType
+    val types get() = when (this) {
+        is Injected -> value.types
+        is Exposed -> listOf(source.returnType)
     }
 }
 
@@ -26,9 +26,9 @@ sealed class Injectable {
     data class Setter(val cls: ClassDescriptor, val descriptor: FunctionDescriptor): Injectable()
     data class Property(val cls: ClassDescriptor, val descriptor: PropertyDescriptor): Injectable()
 
-    val type get() = when(this) {
-        is Setter -> descriptor.returnType
-        is Property -> descriptor.returnType
+    val types get() = when(this) {
+        is Setter -> descriptor.valueParameters.map { it.type }
+        is Property -> listOf(descriptor.returnType)
     }
 }
 
