@@ -5,11 +5,10 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
-import org.jetbrains.kotlin.name.Name
 
 data class GraphNode(val value: Binding, val dependencies: List<GraphNode>)
 
-data class ResolveResult(val endpoint: Endpoint, val bindings: GraphNode)
+data class ResolveResult(val endpoint: Endpoint, val graph: GraphNode)
 
 sealed class Endpoint {
     abstract val source: FunctionDescriptor
@@ -59,12 +58,4 @@ sealed class Binding {
     }
 
     val type get() = resolvedDescriptor.returnType
-
-    val providerName get() = when (this) {
-        is InstanceFunction,
-        is StaticFunction -> resolvedDescriptor.name
-        is Constructor -> descriptor.containingDeclaration.name
-    }.toProviderName()
-
-    private fun Name.toProviderName() = Name.identifier(asString().capitalize() + "Provider")
 }
