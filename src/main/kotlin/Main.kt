@@ -1,24 +1,29 @@
-import dagger.BindsInstance
 import dagger.Component
 import dagger.Module
 import dagger.Provides
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Scope
 
 @TestScope
-@Component(modules = [TestModuleInstance::class, TestModule::class, AbstractModule::class])
+@Component(
+    modules = [TestModuleInstance::class, TestModule::class, AbstractModule::class],
+    dependencies = [Dependency::class]
+)
 interface Main : Common {
     @Component.Factory
     interface Factory {
         fun build(
-            testModuleInstance: TestModuleInstance,
-            @BindsInstance test12: List<Long>
+            dependency: Dependency,
+            testModuleInstance: TestModuleInstance
+//            @BindsInstance test12: List<Long>
         ): Main
     }
 
     fun scopedInjected(): ScopedInjected
     fun inject(instance: Injected2)
     fun test2(): Long
+    fun file(): File
 //    fun test3(): List<Long>
 }
 
@@ -27,6 +32,10 @@ interface Common {
     fun providerLambda(): () -> String
     fun providerLambdaInt(): () -> Int
     fun injected(): Injected
+}
+
+interface Dependency {
+    fun file(): File
 }
 
 @Module

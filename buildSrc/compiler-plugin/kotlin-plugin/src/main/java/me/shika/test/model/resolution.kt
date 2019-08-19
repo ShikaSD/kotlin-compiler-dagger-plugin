@@ -36,7 +36,7 @@ sealed class Binding {
     abstract val scopes: List<AnnotationDescriptor>
 
     data class InstanceFunction(
-        val moduleInstance: ClassDescriptor,
+        val instance: ClassDescriptor,
         val descriptor: FunctionDescriptor,
         override val scopes: List<AnnotationDescriptor>
     ): Binding()

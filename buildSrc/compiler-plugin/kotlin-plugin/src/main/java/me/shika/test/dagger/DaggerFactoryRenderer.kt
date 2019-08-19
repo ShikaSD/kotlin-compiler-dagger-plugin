@@ -89,7 +89,7 @@ class DaggerFactoryRenderer(private val componentBuilder: TypeSpec.Builder, priv
             is Binding.InstanceFunction -> {
                 CodeBlock.of(
                     "return %N.${signature.name}(${depsFactories.joinToString(",") { "${it.name}.get()" }})",
-                    value.moduleInstance.defaultType.typeName()?.name()?.decapitalize()
+                    value.instance.defaultType.typeName()?.name()?.decapitalize()
                 )
             }
         }
@@ -131,12 +131,8 @@ class DaggerFactoryRenderer(private val componentBuilder: TypeSpec.Builder, priv
                 .parameterizedBy(this@provider)
         }
 
-    private fun PropertySpec.toParameter() =
-        ParameterSpec.builder(name, type, *modifiers.toTypedArray())
-            .build()
-
     private fun Binding.InstanceFunction.toProperty(): PropertySpec {
-        val moduleType = moduleInstance.defaultType.typeName()
+        val moduleType = instance.defaultType.typeName()
         return PropertySpec.builder(moduleType!!.name().decapitalize(), moduleType, KModifier.PRIVATE)
             .initializer(moduleType.name().decapitalize())
             .build()

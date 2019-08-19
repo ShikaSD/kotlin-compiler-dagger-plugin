@@ -16,8 +16,9 @@ class DaggerComponentDescriptor(
     val context: ResolverContext
 ) {
     val annotation = definition.componentAnnotation()!!
-    val modules = annotation.componentModules(context)
+    val modules = annotation.value(context, "modules")
     val moduleInstances = modules.filter { it.isInstance() }
+    val dependencies = annotation.value(context, "dependencies")
     val scopes = definition.scopeAnnotations()
 }
 
@@ -30,8 +31,8 @@ private fun ClassDescriptor.componentAnnotation() =
         null
     }
 
-private fun AnnotationDescriptor.componentModules(context: ResolverContext) =
-    (argumentValue("modules")?.value as? List<KClassValue>)
+private fun AnnotationDescriptor.value(context: ResolverContext, name: String) =
+    (argumentValue(name)?.value as? List<KClassValue>)
         ?.mapNotNull {
             val value = it.getArgumentType(context.module)
             value.constructor.declarationDescriptor as? ClassDescriptor

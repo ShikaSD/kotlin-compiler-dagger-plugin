@@ -24,8 +24,9 @@ class DaggerBindingDescriptor(
 
     private fun findBindings(): List<Binding> {
         val modules = componentDescriptor.modules
+        val dependencies = componentDescriptor.dependencies
         val instances = componentDescriptor.moduleInstances
-        return modules.flatMap { module ->
+        val moduleBindings = modules.flatMap { module ->
             val companionBindings = module.companionObjectDescriptor
                 ?.allDescriptors(DescriptorKindFilter.FUNCTIONS)
                 ?: emptyList()
@@ -40,6 +41,16 @@ class DaggerBindingDescriptor(
                     }
                 }
         }
+        val dependencyBindings = dependencies.flatMap { dependency ->
+            dependency.allDescriptors(DescriptorKindFilter.FUNCTIONS)
+                .filterIsInstance<FunctionDescriptor>()
+                .filterNot { it.isFromAny() }
+                .map {
+                    Binding.InstanceFunction(dependency, it, it.scopeAnnotations())
+                }
+        }
+
+        return moduleBindings + dependencyBindings
     }
 
     private fun findEndpoints(): Set<Endpoint> {
@@ -47,9 +58,7 @@ class DaggerBindingDescriptor(
         val functions = scope.getDescriptorsFiltered(DescriptorKindFilter.FUNCTIONS)
             .asSequence()
             .filterIsInstance<FunctionDescriptor>()
-            .filter {
-                !it.isEqualsDescriptor() && !it.isHashCodeDescriptor() && !it.isToStringDescriptor()
-            }
+            .filterNot { it.isFromAny() }
 
         // TODO go through each instead of filtering
 
@@ -105,3 +114,6 @@ private fun DeclarationDescriptor.isHashCodeDescriptor() =
 private fun DeclarationDescriptor.isToStringDescriptor() =
     this is FunctionDescriptor && name == Name.identifier("toString")
         && KotlinBuiltIns.isString(returnType) && valueParameters.isEmpty()
+
+private fun FunctionDescriptor.isFromAny() =
+    isEqualsDescriptor() || isHashCodeDescriptor() || isToStringDescriptor()

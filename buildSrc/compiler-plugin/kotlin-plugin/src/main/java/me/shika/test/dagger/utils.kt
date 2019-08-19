@@ -1,5 +1,7 @@
 package me.shika.test.dagger
 
+import com.squareup.kotlinpoet.ParameterSpec
+import com.squareup.kotlinpoet.PropertySpec
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.name.FqName
@@ -19,5 +21,9 @@ internal fun <T> T.letIf(condition: Boolean, block: (T) -> T) =
     } else {
         this
     }
+
+internal fun PropertySpec.toParameter() =
+    ParameterSpec.builder(name, type, *modifiers.toTypedArray())
+        .build()
 
 private val SCOPE_FQ_NAME = FqName("javax.inject.Scope")

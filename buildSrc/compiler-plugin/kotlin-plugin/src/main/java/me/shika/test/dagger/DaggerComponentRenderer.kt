@@ -48,23 +48,20 @@ class DaggerComponentRenderer(
     }
 
     private fun TypeSpec.Builder.addModuleInstances() = apply {
+        val properties = (componentDescriptor.moduleInstances + componentDescriptor.dependencies).map {
+            val name = it.className().simpleName.decapitalize()
+            PropertySpec.builder(name, it.className(), PRIVATE)
+                .initializer(name)
+                .build()
+        }
+        val params = properties.map { it.toParameter() }
+
         primaryConstructor(
             FunSpec.constructorBuilder()
-                .addParameters(
-                    componentDescriptor.moduleInstances.map {
-                        ParameterSpec.builder(it.className().simpleName.decapitalize(), it.className())
-                            .build()
-                    }
-                )
+                .addParameters(params)
                 .build()
         )
-        addProperties(
-            componentDescriptor.moduleInstances.map {
-                PropertySpec.builder(it.className().simpleName.decapitalize(), it.className(), PRIVATE)
-                    .initializer(it.className().simpleName.decapitalize())
-                    .build()
-            }
-        )
+        addProperties(properties)
     }
 
     private fun TypeSpec.Builder.addBindings(results: List<ResolveResult>) = apply {
@@ -116,8 +113,7 @@ internal fun KotlinType.typeName(): TypeName? =
     classDescriptor()?.className()?.let {
         with(ParameterizedTypeName.Companion) {
             val type = if (arguments.isNotEmpty()) {
-                val arguments = arguments.mapNotNull { it.type.typeName() }
-                    .toTypedArray()
+                val arguments = arguments.mapNotNull { it.type.typeName() }.toTypedArray()
                 it.parameterizedBy(*arguments)
             } else {
                 it
@@ -126,7 +122,11 @@ internal fun KotlinType.typeName(): TypeName? =
         }
     }
 
-private fun TypeSpec.Builder.addFunction(signature: FunctionDescriptor, override: Boolean = false, builder: FunSpec.Builder.() -> Unit) {
+private fun TypeSpec.Builder.addFunction(
+    signature: FunctionDescriptor,
+    override: Boolean = false,
+    builder: FunSpec.Builder.() -> Unit
+) {
     addFunction(
         FunSpec.builder(signature.name.asString())
             .apply {
