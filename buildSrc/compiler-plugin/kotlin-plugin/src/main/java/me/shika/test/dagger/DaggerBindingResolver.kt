@@ -1,5 +1,7 @@
 package me.shika.test.dagger
 
+import me.shika.test.AMBIGUOUS_BINDING
+import me.shika.test.DaggerErrorMessages
 import me.shika.test.model.Binding
 import me.shika.test.model.Endpoint
 import me.shika.test.model.GraphNode
@@ -7,27 +9,39 @@ import me.shika.test.model.ResolveResult
 import me.shika.test.resolver.classDescriptor
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.diagnostics.reportFromPlugin
 import org.jetbrains.kotlin.ir.expressions.typeParametersCount
+import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.checker.NewKotlinTypeChecker
+import org.jetbrains.kotlin.types.typeUtil.makeNotNullable
 
 class DaggerBindingResolver(
     val reporter: MessageCollector,
     val bindingDescriptor: DaggerBindingDescriptor
 ) {
     val component = bindingDescriptor.componentDescriptor
+    val storage = component.context.resolveSession.storageManager
+    val trace = component.context.trace
+
+    val cachedNodeResolve = storage.createMemoizedFunction<Pair<KotlinType, DeclarationDescriptor>, GraphNode> { (type, source) ->
+        type.resolveNode(source)
+    }
 
     fun resolve(): List<ResolveResult> =
         bindingDescriptor.endpoints.map { it.resolveDependencies() }
 
     private fun Endpoint.resolveDependencies(): ResolveResult {
-        val nodes = types.map { it!!.resolveNode() }
+        val nodes = types.map { cachedNodeResolve(it!! to source) }
         return ResolveResult(this, nodes)
     }
 
-    private fun KotlinType.resolveNode(): GraphNode {
+    private fun KotlinType.resolveNode(source: DeclarationDescriptor): GraphNode {
         val canProvide = bindingDescriptor.bindings.filter {
             val returnType = it.type ?: return@filter false
-            returnType.constructor == this.constructor && returnType.arguments == this.arguments
+            NewKotlinTypeChecker.equalTypes(returnType, this)
+                || NewKotlinTypeChecker.equalTypes(returnType, makeNotNullable())
         } + listOfNotNull(this.injectableConstructor())
 
         if (canProvide.isEmpty()) {
@@ -38,10 +52,14 @@ class DaggerBindingResolver(
         }
 
         if (canProvide.size > 1) {
-            reporter.report(
-                CompilerMessageSeverity.EXCEPTION,
-                "Ambiguous binding for $this: found $canProvide"
+            trace.reportFromPlugin(
+                AMBIGUOUS_BINDING.on(source.findPsi()!!),
+                DaggerErrorMessages
             )
+//            reporter.report(
+//                CompilerMessageSeverity.ERROR,
+//                "Ambiguous binding for $this: found $canProvide"
+//            )
         }
 
         val binding = canProvide.first()
@@ -64,7 +82,7 @@ class DaggerBindingResolver(
     private fun Binding.resolveDependencies(): List<GraphNode> =
         resolvedDescriptor.valueParameters
             .map {
-                it.type.resolveNode()
+                cachedNodeResolve(it.type to resolvedDescriptor)
             }
 
     // TODO Remove from here?

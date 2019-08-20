@@ -85,6 +85,9 @@ class TestModuleInstance(val int: Int) {
     @TestScope
     @Provides
     fun integer(): Int = int.also { println("Invoked int") }
+
+    @Provides
+    fun nullableInteger(): Int? = null
 }
 
 @Scope
@@ -102,9 +105,20 @@ abstract class AbstractModule {
     }
 }
 
+@Module
+class ZeroParameterModuleInstance() {
+    @Provides
+    fun longLambda(value: Long): () -> Long = { value }
+}
+
 fun main(args: Array<String>) {
 //    val component = DaggerMain.factory().build(TestModuleInstance(3), listOf())
-    val component = DaggerMain(TestModuleInstance(3))
+    val component = DaggerMain(
+        TestModuleInstance(3),
+        object : Dependency {
+            override fun file(): File = File("Hello")
+        }
+    )
     println(component.injected().lambda())
     println(component.injected().lambda())
     println(component.scopedInjected().lambda())
@@ -117,4 +131,5 @@ fun main(args: Array<String>) {
     println(injected2.lambdaString())
 
     println(component.test2())
+    println(component.file())
 }

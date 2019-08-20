@@ -21,7 +21,7 @@ import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import org.jetbrains.kotlin.resolve.lazy.ResolveSession
 import java.io.File
 
-class TestCompilerAnalysisExtension(
+class DiCompilerAnalysisExtension(
     private val sourcesDir: File,
     private val reporter: MessageCollector
 ) : AnalysisHandlerExtension {
@@ -44,10 +44,8 @@ class TestCompilerAnalysisExtension(
         files.forEach { file ->
             file.accept(
                 classRecursiveVisitor { ktClass ->
-                    println("Visiting class ${ktClass.name}")
                     val classDescriptor = resolveSession.resolveToDescriptor(ktClass) as ClassDescriptor
                     if (classDescriptor.isComponent()) {
-                        println("Class ${ktClass.name} is component")
                         val component = DaggerComponentDescriptor(
                             classDescriptor,
                             file,
@@ -59,6 +57,7 @@ class TestCompilerAnalysisExtension(
 
                         val fileSpec = renderer.render(resolver.resolve())
                         fileSpec.writeTo(sourcesDir)
+
                         val filePath = fileSpec.packageName.split('.')
                             .dropLastWhile { it.isEmpty() }
                             .takeIf { !it.isEmpty() }
@@ -76,7 +75,6 @@ class TestCompilerAnalysisExtension(
         val localFS = fileManager.getFileSystem(StandardFileSystems.FILE_PROTOCOL)
         val psiManager = PsiManager.getInstance(project)
         val addedKtFiles = addedFiles.map {
-            println(it)
             val virtualFile = localFS.findFileByPath(it.absolutePath)!!
             KtFile(
                 viewProvider = SingleRootFileViewProvider(psiManager, virtualFile),
@@ -89,7 +87,15 @@ class TestCompilerAnalysisExtension(
 
         generatedFiles = true
 
-        return AnalysisResult.RetryWithAdditionalJavaRoots(bindingTrace.bindingContext, module, emptyList()) // Repeat with my files pls
+        return if (bindingTrace.bindingContext.diagnostics.isEmpty()) {
+            AnalysisResult.RetryWithAdditionalJavaRoots(
+                bindingTrace.bindingContext,
+                module,
+                emptyList()
+            ) // Repeat with my files pls
+        } else {
+            AnalysisResult.compilationError(bindingTrace.bindingContext)
+        }
     }
 
     override fun analysisCompleted(

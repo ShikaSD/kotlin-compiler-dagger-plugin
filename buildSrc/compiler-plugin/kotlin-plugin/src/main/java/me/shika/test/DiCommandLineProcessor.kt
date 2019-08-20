@@ -9,7 +9,7 @@ import org.jetbrains.kotlin.config.CompilerConfigurationKey
 import java.io.File
 
 @AutoService(CommandLineProcessor::class)
-class TestCommandLineProcessor : CommandLineProcessor {
+class DiCommandLineProcessor : CommandLineProcessor {
     override val pluginId: String = "di-compiler-plugin"
     override val pluginOptions: Collection<AbstractCliOption> =
         listOf(
