@@ -1,7 +1,6 @@
 package me.shika.test.dagger
 
-import com.squareup.kotlinpoet.ParameterSpec
-import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.*
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.name.FqName
@@ -25,5 +24,27 @@ internal fun <T> T.letIf(condition: Boolean, block: (T) -> T) =
 internal fun PropertySpec.toParameter() =
     ParameterSpec.builder(name, type, *modifiers.toTypedArray())
         .build()
+
+fun classWithFactories(
+    factories: List<PropertySpec>,
+    type: ClassName,
+    superInterface: TypeName
+): TypeSpec.Builder {
+    val properties = factories.map {
+        PropertySpec.builder(it.name, it.type, *it.modifiers.toTypedArray())
+            .initializer(it.name)
+            .build()
+    }
+
+    // Inner static class to generate binding
+    return TypeSpec.classBuilder(type)
+        .addSuperinterface(superInterface)
+        .addProperties(properties)
+        .primaryConstructor(
+            FunSpec.constructorBuilder()
+                .addParameters(properties.map { it.toParameter() })
+                .build()
+        )
+}
 
 private val SCOPE_FQ_NAME = FqName("javax.inject.Scope")

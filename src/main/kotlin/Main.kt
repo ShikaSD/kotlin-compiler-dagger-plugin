@@ -86,8 +86,8 @@ class TestModuleInstance(val int: Int) {
     @Provides
     fun integer(): Int = int.also { println("Invoked int") }
 
-    @Provides
-    fun nullableInteger(): Int? = null
+//    @Provides
+//    fun nullableInteger(): Int? = null
 }
 
 @Scope

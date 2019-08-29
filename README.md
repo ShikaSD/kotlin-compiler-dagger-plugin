@@ -20,13 +20,14 @@ Right now I have implemented the concept of:
 - inject dependencies into `@Inject` annotated fields
 - inject dependencies into `@Inject` annotated functions (one param only)
 - local scoping inside component using `@Scope` annotations
+- provide external dependencies using constructor
 
 TODO (in any order):
-- Component dependencies
 - Support of `@BindsInstance` for components
 - `Qualifier`
 - `Lazy` and `Provider` support
 - Subcomponents
+- Proper scope support
 - ... the rest
 
 # To launch test file

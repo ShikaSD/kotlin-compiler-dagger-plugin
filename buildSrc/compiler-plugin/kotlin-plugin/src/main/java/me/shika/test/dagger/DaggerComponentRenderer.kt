@@ -4,7 +4,6 @@ import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.KModifier.OVERRIDE
 import com.squareup.kotlinpoet.KModifier.PRIVATE
 import me.shika.test.model.Endpoint
-import me.shika.test.model.Injectable
 import me.shika.test.model.ResolveResult
 import me.shika.test.resolver.classDescriptor
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
@@ -66,6 +65,7 @@ class DaggerComponentRenderer(
 
     private fun TypeSpec.Builder.addBindings(results: List<ResolveResult>) = apply {
         val factoryRenderer = DaggerFactoryRenderer(this, componentClassName)
+        val membersInjectorRenderer = DaggerMembersInjectorRenderer(this, componentClassName, factoryRenderer)
         results.groupBy { it.endpoint.source }
             .map { (_, results) ->
                 val result = results.first()
@@ -77,25 +77,10 @@ class DaggerComponentRenderer(
                         }
                     }
                     is Endpoint.Injected -> {
-                        val injectedFactories = results.map { it to it.graph.map { factoryRenderer.getFactory(it) } }
                         addFunction(endpoint.source, override = true) {
-                            val injectedName = parameters.first().name
-                            injectedFactories.forEach { (result, factories) ->
-                                val endpoint = result.endpoint as Endpoint.Injected
-                                when (val injectable = endpoint.value) {
-                                    is Injectable.Setter -> {
-                                        val setter = injectable.descriptor.name.asString()
-                                        val params = factories.joinToString { "${it?.name}.get()" }
-                                        addCode("$injectedName.$setter($params)\n")
-                                    }
-                                    is Injectable.Property -> {
-                                        val parameter = injectable.descriptor.name.asString()
-                                        val factory = factories.single()
-                                        val value = "${factory?.name}.get()"
-                                        addCode("$injectedName.$parameter = $value\n")
-                                    }
-                                }
-                            }
+                            val injectedValue = parameters.first()
+                            val membersInjector = membersInjectorRenderer.getMembersInjector(injectedValue.type, results)
+                            addCode("%N.injectMembers(${injectedValue.name})", membersInjector)
                         }
                     }
                 }

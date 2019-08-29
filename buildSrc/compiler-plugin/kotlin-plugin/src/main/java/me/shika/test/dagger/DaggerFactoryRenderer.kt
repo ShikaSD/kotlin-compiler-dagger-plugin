@@ -30,31 +30,19 @@ class DaggerFactoryRenderer(private val componentBuilder: TypeSpec.Builder, priv
 
         val factoryType = componentName.nestedClass("${name}_Factory")
         val factoryMemberName = "${name}_Provider".decapitalize()
+        val instanceProperty = (graphNode.value as? Binding.InstanceFunction)?.toProperty()
 
         val depsFactories = graphNode.dependencies.mapNotNull { getFactory(it) }
-        val properties = depsFactories.toMutableList().apply {
-            addIfNotNull((graphNode.value as? Binding.InstanceFunction)?.toProperty())
-        }.map {
-            PropertySpec.builder(it.name, it.type, *it.modifiers.toTypedArray())
-                .initializer(it.name)
-                .build()
-        }
+        val factoryProperties = depsFactories.toMutableList()
+            .apply { addIfNotNull(instanceProperty) }
 
-        // Inner static class to generate binding
         addType(
-            TypeSpec.classBuilder(factoryType)
-                .addSuperinterface(providerType)
-                .addProperties(properties)
-                .primaryConstructor(
-                    FunSpec.constructorBuilder()
-                        .addParameters(properties.map { it.toParameter() })
-                        .build()
-                )
+            classWithFactories(factoryProperties, factoryType, providerType)
                 .addFunction(
                     FunSpec.builder("get")
                         .addModifiers(KModifier.OVERRIDE)
                         .returns(returnType)
-                        .addCode(graphNode.providerBody(signature, depsFactories, parentType))
+                        .addCode(graphNode.providerBody(instanceProperty, signature, depsFactories, parentType))
                         .build()
                 )
                 .build()
@@ -70,6 +58,7 @@ class DaggerFactoryRenderer(private val componentBuilder: TypeSpec.Builder, priv
     }
 
     private fun GraphNode.providerBody(
+        instanceProperty: PropertySpec?,
         signature: FunctionDescriptor,
         depsFactories: List<PropertySpec>,
         parentType: TypeName?
@@ -89,7 +78,7 @@ class DaggerFactoryRenderer(private val componentBuilder: TypeSpec.Builder, priv
             is Binding.InstanceFunction -> {
                 CodeBlock.of(
                     "return %N.${signature.name}(${depsFactories.joinToString(",") { "${it.name}.get()" }})",
-                    value.instance.defaultType.typeName()?.name()?.decapitalize()
+                    instanceProperty!!.name
                 )
             }
         }
