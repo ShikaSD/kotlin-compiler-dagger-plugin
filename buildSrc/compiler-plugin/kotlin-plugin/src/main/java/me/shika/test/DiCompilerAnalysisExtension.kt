@@ -5,10 +5,6 @@ import me.shika.test.resolver.ResolverContext
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
-import org.jetbrains.kotlin.com.intellij.openapi.vfs.StandardFileSystems
-import org.jetbrains.kotlin.com.intellij.openapi.vfs.VirtualFileManager
-import org.jetbrains.kotlin.com.intellij.psi.PsiManager
-import org.jetbrains.kotlin.com.intellij.psi.SingleRootFileViewProvider
 import org.jetbrains.kotlin.container.ComponentProvider
 import org.jetbrains.kotlin.container.get
 import org.jetbrains.kotlin.context.ProjectContext
@@ -69,29 +65,15 @@ class DiCompilerAnalysisExtension(
             )
         }
 
-//        if (addedFiles.isEmpty()) return null
-
-        val fileManager = VirtualFileManager.getInstance()
-        val localFS = fileManager.getFileSystem(StandardFileSystems.FILE_PROTOCOL)
-        val psiManager = PsiManager.getInstance(project)
-        val addedKtFiles = addedFiles.map {
-            val virtualFile = localFS.findFileByPath(it.absolutePath)!!
-            KtFile(
-                viewProvider = SingleRootFileViewProvider(psiManager, virtualFile),
-                isCompiled = false
-            )
-        }.toMutableList()
-
-        files as MutableList<KtFile>
-        files.addAll(addedKtFiles)
+        if (addedFiles.isEmpty()) return AnalysisResult.Companion.success(bindingTrace.bindingContext, module)
 
         generatedFiles = true
-
         return if (bindingTrace.bindingContext.diagnostics.isEmpty()) {
-            AnalysisResult.RetryWithAdditionalJavaRoots(
-                bindingTrace.bindingContext,
-                module,
-                emptyList()
+            AnalysisResult.RetryWithAdditionalRoots(
+                bindingContext = bindingTrace.bindingContext,
+                moduleDescriptor = module,
+                additionalJavaRoots = emptyList(),
+                additionalKotlinRoots = addedFiles
             ) // Repeat with my files pls
         } else {
             AnalysisResult.compilationError(bindingTrace.bindingContext)
