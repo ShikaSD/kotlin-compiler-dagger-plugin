@@ -1,21 +1,27 @@
-import lib.Component
-import lib.bind
-import lib.component
-import lib.get
+import lib.*
 
 interface Main : Component
 
-// Generated
-fun Main.getInt(): Int = 0
+interface Dependency {
+    fun longInstance(): Long
+}
 
 fun main() {
     val intInstance = 0
 
     val componentImpl = component<Main>(
         bind(intInstance),
-        bind { it: Int -> it.toString() }
+        module(
+            bind { it: Int -> it.toString() }
+        ),
+        dependency(
+            object : Dependency {
+                override fun longInstance(): Long = 1L
+            }
+        )
     )
 
     println(componentImpl.get<Int>())
     println(componentImpl.get<String>())
+    println(componentImpl.get<Long>())
 }
