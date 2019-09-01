@@ -1,6 +1,6 @@
-The main topic of this note is to explore robust DI compile-time "safe" container implementation relying on language itself, not annotation processing.
+This note explores compile-time "safe" DI container implementation relying on language itself, as opposed to annotation processing.
 
-I see several main points of implementation for MVP:
+The topics to explore for MVP:
 1. Exposing dependencies from container
 2. Wiring(binding) dependency graph
 3. Injection (constructor and instance fields)
@@ -8,8 +8,9 @@ I see several main points of implementation for MVP:
 5. Subscoping and providing parts of the parent graph to children.
 
 ## Exposing dependencies:
-The container providing dependencies can be called a `Component` in analogy with dagger.
-To associate each graph with correct instance calls, we can use a named component interface. To distinguish those (and to go away from annotations `TODO: why?`), marker `interface Component` can be used.
+The container providing dependencies called a `Component` in analogy with dagger.
+To associate each graph with correct instance calls, we can use a named component interface.
+To distinguish those (and to go away from annotations `TODO: why?`), marker `interface Component` can be used.
 
 Kotlin has extension functions which can be leveraged here, providing a single entry point for every call.
 ```kotlin
@@ -27,20 +28,25 @@ Base function will be substituted for generated one at compile time.
 Component definition can be done using Kotlin DSL and compiler transformations. `TODO: provide more details`
 ```kotlin
 // Library
-fun <T: Component> component(vararg dependencies: Any?): T = TODO()
+fun <T: Component> component(vararg dependencies: Binding<*>): T = TODO()
+fun module(definition: () -> Array<Binding<*>>): Array<Binding>
 
 // Client
 fun init() {
     val fooComponent = component<FooComponent>(
         bind<Bar>(barInstance),
-        bind<Bar1>(::bar1Provider)
+        bind<Bar1>(::bar1Provider),
+        *module(::fooBarModule)
     )
 
     val instance: Bar = fooComponent.get()
 }
 ```
 
-It should be possible to generate the endpoints dynamically based on the usage in code. There is a problem of implementation details implicitly escaping interface of DI container, so it is questionable direction to proceed.
+It should be possible to generate the endpoints dynamically based on the usage in code.
+Problems to address:
+ - Runtime branching in parameters
+ - implementation details implicitly escaping interface of DI container.
 
 ## Wiring
 
