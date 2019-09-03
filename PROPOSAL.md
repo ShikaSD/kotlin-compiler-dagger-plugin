@@ -25,6 +25,9 @@ fun FooComponent.getBar(): Bar = ...
 ```
 Base function will be substituted for generated one at compile time. 
 
+Found shortcomings: 
+1. The component can be referenced in another module, which imposes some problem on correct validation
+
 Component definition can be done using Kotlin DSL and compiler transformations. `TODO: provide more details`
 ```kotlin
 // Library
@@ -45,13 +48,17 @@ fun init() {
 
 It should be possible to generate the endpoints dynamically based on the usage in code.
 Problems to address:
- - Runtime branching in parameters
+ - Runtime branching in parameters and method call
  - implementation details implicitly escaping interface of DI container.
+ - Multiple definitions of component in the same module (different modules make it even worse)
 
 ## Wiring
 
 `TODO: module definition`
-`TODO: check macwire for examples`
+
+`TODO: explore macwire`
+
+`TODO: explore boost di`
 
 ## Injection
 
