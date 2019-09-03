@@ -1,6 +1,6 @@
-package me.shika.test.dagger
+package me.shika.di.dagger
 
-import me.shika.test.resolver.ResolverContext
+import me.shika.di.resolver.ResolverContext
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor

@@ -1,12 +1,12 @@
-package me.shika.test.dagger
+package me.shika.di.dagger
 
-import me.shika.test.AMBIGUOUS_BINDING
-import me.shika.test.DaggerErrorMessages
-import me.shika.test.model.Binding
-import me.shika.test.model.Endpoint
-import me.shika.test.model.GraphNode
-import me.shika.test.model.ResolveResult
-import me.shika.test.resolver.classDescriptor
+import me.shika.di.AMBIGUOUS_BINDING
+import me.shika.di.DaggerErrorMessages
+import me.shika.di.model.Binding
+import me.shika.di.model.Endpoint
+import me.shika.di.model.GraphNode
+import me.shika.di.model.ResolveResult
+import me.shika.di.resolver.classDescriptor
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor

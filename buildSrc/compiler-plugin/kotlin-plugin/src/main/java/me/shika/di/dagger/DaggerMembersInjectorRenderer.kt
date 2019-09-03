@@ -1,9 +1,16 @@
-package me.shika.test.dagger
+package me.shika.di.dagger
 
-import com.squareup.kotlinpoet.*
-import me.shika.test.model.Endpoint
-import me.shika.test.model.Injectable
-import me.shika.test.model.ResolveResult
+import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.CodeBlock
+import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.ParameterizedTypeName
+import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.TypeSpec
+import me.shika.di.model.Endpoint
+import me.shika.di.model.Injectable
+import me.shika.di.model.ResolveResult
 
 class DaggerMembersInjectorRenderer(
     private val componentBuilder: TypeSpec.Builder,

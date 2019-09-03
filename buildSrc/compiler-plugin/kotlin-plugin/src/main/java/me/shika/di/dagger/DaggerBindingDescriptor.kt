@@ -1,9 +1,9 @@
-package me.shika.test.dagger
+package me.shika.di.dagger
 
-import me.shika.test.model.Binding
-import me.shika.test.model.Endpoint
-import me.shika.test.model.Injectable
-import me.shika.test.resolver.classDescriptor
+import me.shika.di.model.Binding
+import me.shika.di.model.Endpoint
+import me.shika.di.model.Injectable
+import me.shika.di.resolver.classDescriptor
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.contracts.parsing.isEqualsDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor

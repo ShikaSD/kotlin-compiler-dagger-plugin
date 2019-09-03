@@ -1,11 +1,17 @@
-package me.shika.test.dagger
+package me.shika.di.dagger
 
-import com.squareup.kotlinpoet.*
+import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier.OVERRIDE
 import com.squareup.kotlinpoet.KModifier.PRIVATE
-import me.shika.test.model.Endpoint
-import me.shika.test.model.ResolveResult
-import me.shika.test.resolver.classDescriptor
+import com.squareup.kotlinpoet.ParameterizedTypeName
+import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.TypeSpec
+import me.shika.di.model.Endpoint
+import me.shika.di.model.ResolveResult
+import me.shika.di.resolver.classDescriptor
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -65,7 +71,8 @@ class DaggerComponentRenderer(
 
     private fun TypeSpec.Builder.addBindings(results: List<ResolveResult>) = apply {
         val factoryRenderer = DaggerFactoryRenderer(this, componentClassName)
-        val membersInjectorRenderer = DaggerMembersInjectorRenderer(this, componentClassName, factoryRenderer)
+        val membersInjectorRenderer =
+            DaggerMembersInjectorRenderer(this, componentClassName, factoryRenderer)
         results.groupBy { it.endpoint.source }
             .map { (_, results) ->
                 val result = results.first()

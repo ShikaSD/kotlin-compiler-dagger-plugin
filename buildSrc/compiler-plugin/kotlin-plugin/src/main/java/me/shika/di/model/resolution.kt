@@ -1,4 +1,4 @@
-package me.shika.test.model
+package me.shika.di.model
 
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor

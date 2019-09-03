@@ -1,4 +1,4 @@
-package me.shika.test
+package me.shika.di
 
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector

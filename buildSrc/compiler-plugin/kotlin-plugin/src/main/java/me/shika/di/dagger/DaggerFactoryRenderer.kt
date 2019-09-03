@@ -1,8 +1,16 @@
-package me.shika.test.dagger
+package me.shika.di.dagger
 
-import com.squareup.kotlinpoet.*
-import me.shika.test.model.Binding
-import me.shika.test.model.GraphNode
+import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.CodeBlock
+import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.MemberName
+import com.squareup.kotlinpoet.ParameterizedTypeName
+import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.TypeSpec
+import me.shika.di.model.Binding
+import me.shika.di.model.GraphNode
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.utils.addIfNotNull
