@@ -8,30 +8,27 @@ The topics to explore for MVP:
 5. Subscoping and providing parts of the parent graph to children.
 
 ## Exposing dependencies:
-The container providing dependencies called a `Component` in analogy with dagger.
-To associate each graph with correct instance calls, we can use a named component interface.
-To distinguish those (and to go away from annotations `TODO: why?`), marker `interface Component` can be used.
-
-Kotlin has extension functions which can be leveraged here, providing a single entry point for every call.
+The problem of exposing dependencies can be reduced to constructor injection.
+Similarly to dagger, which is generating implementation for an interface, we can imagine the container for 
+exposed types as a class. 
+The framework task in this scenario is to wire chain of the constructors with correct dependencies.
 ```kotlin
-// Base function defined in library
-fun <T> Component.get(): T = TODO("Should be generated")
+class FooComponent(
+    val bar: Bar,
+    val otherDependency: Other.Dependency
+)
 
-// Definition of component in the client code
-interface FooComponent : Component
+// or
 
-// Generated functions for each endpoint
-fun FooComponent.getBar(): Bar = ...
+interface FooComponent {
+    val bar: Bar
+    val otherDependency: Other.Dependency
+}
 ```
-Base function will be substituted for generated one at compile time. 
-
-Found shortcomings: 
-1. The component can be referenced in another module, which imposes some problem on correct validation
-
 Component definition can be done using Kotlin DSL and compiler transformations. `TODO: provide more details`
 ```kotlin
 // Library
-fun <T: Component> component(vararg dependencies: Binding<*>): T = TODO()
+fun <T> component(vararg dependencies: Binding<*>): T = TODO()
 fun module(definition: () -> Array<Binding<*>>): Array<Binding>
 
 // Client
@@ -42,15 +39,14 @@ fun init() {
         *module(::fooBarModule)
     )
 
-    val instance: Bar = fooComponent.get()
+    val instance: Bar = fooComponent.bar
 }
 ```
+This way, the dependency graph can be defined in multiple ways. The framework task is to ensure that
+all the types are known in the compile time and validate the graph. 
 
-It should be possible to generate the endpoints dynamically based on the usage in code.
-Problems to address:
- - Runtime branching in parameters and method call
- - implementation details implicitly escaping interface of DI container.
- - Multiple definitions of component in the same module (different modules make it even worse)
+Food for thought:
+ - Is such "dynamic" definition providing better user experience rather than "static graph" that Dagger use?
 
 ## Wiring
 
