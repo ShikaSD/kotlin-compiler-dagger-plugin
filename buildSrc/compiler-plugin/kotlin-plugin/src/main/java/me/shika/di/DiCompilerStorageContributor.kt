@@ -5,10 +5,12 @@ import org.jetbrains.kotlin.container.StorageComponentContainer
 import org.jetbrains.kotlin.container.useInstance
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.extensions.StorageComponentContainerContributor
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.platform.TargetPlatform
 import org.jetbrains.kotlin.resolve.calls.checkers.CallChecker
 import org.jetbrains.kotlin.resolve.calls.checkers.CallCheckerContext
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class DiCompilerStorageContributor : StorageComponentContainerContributor {
     override fun registerModuleComponents(
@@ -22,7 +24,10 @@ class DiCompilerStorageContributor : StorageComponentContainerContributor {
 
 class DiCompilerCallChecker : CallChecker {
     override fun check(resolvedCall: ResolvedCall<*>, reportOn: PsiElement, context: CallCheckerContext) {
-        println(resolvedCall.candidateDescriptor)
+        if (resolvedCall.candidateDescriptor.fqNameSafe == FqName("lib.component")) {
+            calls.add(resolvedCall)
+        }
     }
 
 }
+val calls: MutableList<ResolvedCall<*>> = mutableListOf()

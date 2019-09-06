@@ -1,21 +1,14 @@
-import lib.Component
-import lib.bind
 import lib.component
-import lib.get
-
-interface Main : Component
 
 fun main() {
-    val intInstance = 0
-
-    val componentImpl = component<Main>(
-        bind(intInstance),
-        bind { it: Int -> it.toString() }
+    val foo = component<Foo>(
+        0,
+        ""
     )
-
-    println(componentImpl.get<Int>())
-    println(componentImpl.get<String>())
+    println(foo)
 }
 
-private fun Main.provideString() =
-    get<String>()
+data class Foo(
+    val int: Int,
+    val string: String
+)

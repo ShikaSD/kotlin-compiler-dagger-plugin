@@ -5,6 +5,7 @@ import me.shika.di.DiCommandLineProcessor.Companion.KEY_ENABLED
 import me.shika.di.DiCommandLineProcessor.Companion.KEY_SOURCES
 import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
+import org.jetbrains.kotlin.codegen.extensions.ExpressionCodegenExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
@@ -34,6 +35,11 @@ class DiCompilerComponentRegistrar: ComponentRegistrar {
         AnalysisHandlerExtension.registerExtension(
             project,
             DiCompilerAnalysisExtension(sourcesDir = sourcesDir, reporter = reporter)
+        )
+
+        ExpressionCodegenExtension.registerExtension(
+            project,
+            DiCodegenExtension()
         )
 
         StorageComponentContainerContributor.registerExtension(
