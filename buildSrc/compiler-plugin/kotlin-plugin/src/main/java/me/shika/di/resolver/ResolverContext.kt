@@ -1,11 +1,11 @@
 package me.shika.di.resolver
 
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.resolve.BindingTrace
-import org.jetbrains.kotlin.resolve.lazy.ResolveSession
+import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
+import org.jetbrains.kotlin.storage.StorageManager
 
 class ResolverContext(
-    val module: ModuleDescriptor,
     val trace: BindingTrace,
-    val resolveSession: ResolveSession
+    val storageManager: StorageManager,
+    val resolvedCall: ResolvedCall<*>
 )

@@ -1,5 +1,6 @@
 package me.shika.di
 
+import me.shika.di.resolver.COMPONENT_CALLS
 import org.jetbrains.kotlin.codegen.JvmKotlinType
 import org.jetbrains.kotlin.codegen.StackValue
 import org.jetbrains.kotlin.codegen.extensions.ExpressionCodegenExtension
@@ -20,6 +21,7 @@ class DiCodegenExtension : ExpressionCodegenExtension {
         resolvedCall: ResolvedCall<*>,
         c: ExpressionCodegenExtension.Context
     ): StackValue? {
+        val calls = c.codegen.bindingContext.getKeys(COMPONENT_CALLS)
         if (resolvedCall in calls) {
             println("Need to be overriden")
             val module = c.codegen.context.functionDescriptor.module
