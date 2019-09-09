@@ -1,6 +1,7 @@
 package me.shika.di
 
 import me.shika.di.model.Binding
+import me.shika.di.render.GraphToFunctionRenderer
 import me.shika.di.resolver.COMPONENT_CALLS
 import me.shika.di.resolver.ComponentDescriptor
 import me.shika.di.resolver.ResolverContext
@@ -69,10 +70,13 @@ class DiCompilerAnalysisExtension(
         bindingTrace: BindingTrace,
         files: Collection<KtFile>
     ): AnalysisResult? {
-        if (generatedFiles) return null
-        generatedFiles = true
-
         val calls = bindingTrace.getKeys(COMPONENT_CALLS)
+
+        if (generatedFiles) {
+            // record new descriptor
+            return null
+        }
+        generatedFiles = true
 
         val processors = listOf(
             ParseParameters(),
@@ -93,13 +97,17 @@ class DiCompilerAnalysisExtension(
 
             val descriptor = ComponentDescriptor(resultType!!, bindings.toList())
             val graph = context.resolveGraph(descriptor)
+
             println(graph)
+
+            val fileSpec = GraphToFunctionRenderer(context).invoke(graph)
+            fileSpec.writeTo(sourcesDir)
         }
         return AnalysisResult.RetryWithAdditionalRoots(
             bindingContext = bindingTrace.bindingContext,
             moduleDescriptor = module,
             additionalJavaRoots = emptyList(),
-            additionalKotlinRoots = emptyList()
+            additionalKotlinRoots = listOf(sourcesDir)
         ) // Repeat with my files pls
     }
 }

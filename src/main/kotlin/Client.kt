@@ -4,10 +4,8 @@ fun main() {
     val foo = component<Foo>(
         ::Bar,
         0,
-        ""
+        { it: Int -> it.toString() }
     )
-
-    println(foo)
 }
 
 data class Foo(
