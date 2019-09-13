@@ -34,7 +34,7 @@ class DiCompilerComponentRegistrar: ComponentRegistrar {
 
         AnalysisHandlerExtension.registerExtension(
             project,
-            DiCompilerAnalysisExtension(sourcesDir = sourcesDir, reporter = reporter)
+            DiCompilerAnalysisExtension(sourcesDir = sourcesDir)
         )
 
         ExpressionCodegenExtension.registerExtension(

@@ -1,41 +1,58 @@
 package me.shika.di.render
 
 import com.squareup.kotlinpoet.ClassName
-import me.shika.di.resolver.ResolverContext
+import com.squareup.kotlinpoet.Dynamic
+import com.squareup.kotlinpoet.LambdaTypeName
+import com.squareup.kotlinpoet.ParameterSpec
+import com.squareup.kotlinpoet.ParameterizedTypeName
+import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.TypeVariableName
+import com.squareup.kotlinpoet.WildcardTypeName
+import me.shika.di.model.GraphNode
 import me.shika.di.resolver.classDescriptor
-import org.jetbrains.kotlin.backend.common.serialization.findTopLevelDescriptor
-import org.jetbrains.kotlin.com.intellij.psi.PsiElement
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.incremental.components.NoLookupLocation
-import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.psi.KtDeclaration
-import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.psi.ValueArgument
+import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.KotlinType
 
-fun KotlinType.typeName(): ClassName? = classDescriptor()?.fqNameSafe?.let {
+fun KotlinType.typeName(): TypeName? = classDescriptor()?.fqNameSafe?.let {
+    val types = arguments.map { it.type.typeName()!! }
     ClassName(it.parent().asString(), it.shortName().asString())
+        .let {
+            if (types.isNotEmpty()) {
+                with(ParameterizedTypeName.Companion) {
+                    it.parameterizedBy(*types.toTypedArray())
+                }
+            } else {
+                it
+            }
+        }
 }
 
-fun PsiElement.parentDeclaration(): KtDeclaration? {
-    var declaration: PsiElement? = this
-    while (declaration != null && declaration !is KtDeclaration) declaration = declaration.parent
-    return declaration as? KtDeclaration
+fun TypeName?.variableName(): String =
+    when (this) {
+        is ClassName -> canonicalName.replace(".", "_")
+        is ParameterizedTypeName -> {
+            this.rawType.variableName() +
+                this.typeArguments.joinToString(separator = "_", prefix = "_") { it.variableName() }
+        }
+        is TypeVariableName,
+        is WildcardTypeName,
+        is Dynamic,
+        is LambdaTypeName,
+        null -> TODO()
+    }.decapitalize()
+
+fun List<ValueArgument>.parameters(trace: BindingTrace): List<ParameterSpec> {
+    return mapIndexed { i, arg ->
+        val type = trace.getType(arg.getArgumentExpression()!!)
+        val typeName = type!!.typeName()!!
+        ParameterSpec.builder("p$i", typeName)
+            .build()
+    }
 }
 
-fun ResolverContext.parentDescriptor() =
-    resolvedCall.call.calleeExpression?.parentDeclaration()?.let {
-        trace[BindingContext.DECLARATION_TO_DESCRIPTOR, it]
-    }?.findTopLevelDescriptor()
-
-fun ModuleDescriptor.findTopLevelFunctionForName(packageFqName: FqName, functionName: FqName): FunctionDescriptor? {
-    val packageViewDescriptor = getPackage(packageFqName)
-    val segments = functionName.pathSegments()
-    val topLevelFunctions = packageViewDescriptor.memberScope.getContributedFunctions(
-        segments.first(),
-        NoLookupLocation.FROM_DESERIALIZATION
-    ).filter { it.name == functionName.shortName() }
-        .firstOrNull()
-    return topLevelFunctions
+fun GraphNode.topSort(result: MutableSet<GraphNode>) {
+    dependencies.forEach { it.topSort(result) }
+    result.add(this)
 }
