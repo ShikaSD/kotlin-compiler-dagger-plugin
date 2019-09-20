@@ -1,4 +1,9 @@
+import lib.Module
+import lib.bind
 import lib.component
+import lib.get
+import lib.module
+import lib.with
 
 fun main() {
     val foo = component<Foo>(
@@ -14,6 +19,10 @@ fun main() {
 
     println(foo)
     println(foo1)
+
+    component<Foo>(
+        bind<Int>() with { int: Int ->  }
+    )
 }
 
 data class Foo(
@@ -23,18 +32,3 @@ data class Foo(
 )
 
 data class Bar(val int: Int)
-
-fun bar(): Int = 0
-
-
-fun qwe() {
-
-//    component<Foo>(
-//        bind<Int>(0),
-//        bindF<Bar> { foo: Foo, s: String -> Bar(foo, s) },
-//        bindF<String>(::lol)
-//    )
-}
-
-fun <T> bind(t: T): T = TODO()
-fun <T> bindF(r: Any?): T = TODO()

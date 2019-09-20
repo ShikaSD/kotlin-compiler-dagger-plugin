@@ -63,12 +63,12 @@ Food for thought:
 Field injection:
 ```kotlin
 // Library
-interface Injectable<T : Component> {
+interface Injectable<T> {
     fun <R> inject(): ReadOnlyProperty<Injectable<T>, R> = // delegate
 }
 
 // Client 
-class SomeClass : Injectable<FooComponent> {
+class SomeClass : Injectable<Foo> {
     val someField: Foo by inject() // Can we make it compile time safe?
 }
 ```
