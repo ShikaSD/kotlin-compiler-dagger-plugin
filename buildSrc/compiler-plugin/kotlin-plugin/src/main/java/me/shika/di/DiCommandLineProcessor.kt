@@ -1,4 +1,4 @@
-package me.shika.test
+package me.shika.di
 
 import com.google.auto.service.AutoService
 import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
