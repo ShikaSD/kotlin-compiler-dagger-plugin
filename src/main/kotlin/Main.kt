@@ -1,3 +1,4 @@
+import dagger.BindsInstance
 import dagger.Component
 import dagger.Module
 import dagger.Provides
@@ -15,8 +16,8 @@ interface Main : Common {
     interface Factory {
         fun build(
             dependency: Dependency,
-            testModuleInstance: TestModuleInstance
-//            @BindsInstance test12: List<Long>
+            testModuleInstance: TestModuleInstance,
+            @BindsInstance test12: List<Long>
         ): Main
     }
 
@@ -24,7 +25,7 @@ interface Main : Common {
     fun inject(instance: Injected2)
     fun test2(): Long
     fun file(): File
-//    fun test3(): List<Long>
+    fun test3(): List<Long>
 }
 
 interface Common {
@@ -112,13 +113,15 @@ class ZeroParameterModuleInstance() {
 }
 
 fun main(args: Array<String>) {
-//    val component = DaggerMain.factory().build(TestModuleInstance(3), listOf())
-    val component = DaggerMain(
-        TestModuleInstance(3),
-        object : Dependency {
-            override fun file(): File = File("Hello")
-        }
-    )
+    val component = DaggerMain.factory()
+        .build(
+            object : Dependency {
+                override fun file() = File("")
+            },
+            TestModuleInstance(3),
+            listOf()
+        )
+
     println(component.injected().lambda())
     println(component.injected().lambda())
     println(component.scopedInjected().lambda())

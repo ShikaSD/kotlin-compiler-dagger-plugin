@@ -17,6 +17,7 @@ class DaggerComponentDescriptor(
 ) {
     val annotation = definition.componentAnnotation()!!
     val modules = annotation.value(context, "modules")
+    val factoryDescriptor = DaggerFactoryDescriptor(this)
     val moduleInstances = modules.filter { it.isInstance() }
     val dependencies = annotation.value(context, "dependencies")
     val scopes = definition.scopeAnnotations()

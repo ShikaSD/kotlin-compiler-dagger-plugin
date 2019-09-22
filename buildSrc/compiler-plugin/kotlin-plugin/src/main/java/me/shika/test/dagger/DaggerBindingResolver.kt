@@ -15,7 +15,6 @@ import org.jetbrains.kotlin.ir.expressions.typeParametersCount
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.checker.NewKotlinTypeChecker
-import org.jetbrains.kotlin.types.typeUtil.makeNotNullable
 
 class DaggerBindingResolver(
     val reporter: MessageCollector,
@@ -41,8 +40,7 @@ class DaggerBindingResolver(
         val canProvide = bindingDescriptor.bindings.filter {
             val returnType = it.type ?: return@filter false
             NewKotlinTypeChecker.equalTypes(returnType, this)
-                || NewKotlinTypeChecker.equalTypes(returnType, makeNotNullable())
-        } + listOfNotNull(this.injectableConstructor())
+        } + listOfNotNull(injectableConstructor())
 
         if (canProvide.isEmpty()) {
             reporter.report(
@@ -70,7 +68,7 @@ class DaggerBindingResolver(
         if (!componentScopeNames.containsAll(scopeAnnotations)) {
             reporter.report(
                 CompilerMessageSeverity.EXCEPTION,
-                "Component ${component.definition} and ${bindingDescriptor.name} scopes do not match: " +
+                "Component ${component.definition} and ${bindingDescriptor?.name} scopes do not match: " +
                         "component - $componentScopeNames," +
                         " binding - $scopeAnnotations"
             )
@@ -80,10 +78,10 @@ class DaggerBindingResolver(
     }
 
     private fun Binding.resolveDependencies(): List<GraphNode> =
-        resolvedDescriptor.valueParameters
-            .map {
-                cachedNodeResolve(it.type to resolvedDescriptor)
-            }
+        resolvedDescriptor?.valueParameters
+            ?.map {
+                cachedNodeResolve(it.type to resolvedDescriptor!!)
+            } ?: emptyList()
 
     // TODO Remove from here?
     private fun KotlinType.injectableConstructor(): Binding.Constructor? {

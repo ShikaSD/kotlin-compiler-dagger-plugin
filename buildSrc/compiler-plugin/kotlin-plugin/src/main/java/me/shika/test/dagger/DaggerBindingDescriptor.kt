@@ -25,7 +25,8 @@ class DaggerBindingDescriptor(
     private fun findBindings(): List<Binding> {
         val modules = componentDescriptor.modules
         val dependencies = componentDescriptor.dependencies
-        val instances = componentDescriptor.moduleInstances
+        val moduleInstances = componentDescriptor.moduleInstances
+        val instances = componentDescriptor.factoryDescriptor.instances
         val moduleBindings = modules.flatMap { module ->
             val companionBindings = module.companionObjectDescriptor
                 ?.allDescriptors(DescriptorKindFilter.FUNCTIONS)
@@ -36,7 +37,7 @@ class DaggerBindingDescriptor(
                 .filterIsInstance<FunctionDescriptor>()
                 .map {
                     when (module) {
-                        in instances -> Binding.InstanceFunction(module, it, it.scopeAnnotations())
+                        in moduleInstances -> Binding.InstanceFunction(module, it, it.scopeAnnotations())
                         else -> Binding.StaticFunction(it, it.scopeAnnotations())
                     }
                 }
@@ -50,7 +51,9 @@ class DaggerBindingDescriptor(
                 }
         }
 
-        return moduleBindings + dependencyBindings
+        val instanceBindings = instances.map { Binding.Instance(it) }
+
+        return moduleBindings + dependencyBindings + instanceBindings
     }
 
     private fun findEndpoints(): Set<Endpoint> {
