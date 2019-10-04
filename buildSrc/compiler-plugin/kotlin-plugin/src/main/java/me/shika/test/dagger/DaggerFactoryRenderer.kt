@@ -41,6 +41,7 @@ class DaggerFactoryRenderer(private val componentBuilder: TypeSpec.Builder, priv
         val instanceProperty = when (graphNode.value) {
             is Binding.InstanceFunction -> graphNode.value.toProperty()
             is Binding.Instance -> graphNode.value.toProperty()
+            is Binding.Self -> graphNode.value.toProperty()
             else -> null
         }
 
@@ -93,7 +94,8 @@ class DaggerFactoryRenderer(private val componentBuilder: TypeSpec.Builder, priv
                     instanceProperty!!.name
                 )
             }
-            is Binding.Instance -> {
+            is Binding.Instance,
+            is Binding.Self -> {
                 CodeBlock.of(
                     "return %N", instanceProperty!!.name
                 )
@@ -108,6 +110,9 @@ class DaggerFactoryRenderer(private val componentBuilder: TypeSpec.Builder, priv
     ) = apply {
         val params = depsFactories.map { it.name }.toMutableList()
         componentBuilder.propertySpecs.find { it.type == parentType }?.let { params += it.name }
+        if (parentType?.string() == componentName.string().removePrefix("Dagger")) { // hack
+            params += "this"
+        }
 
         val doubleCheckName = MemberName(
             ClassName("dagger.internal", "DoubleCheck"),
@@ -152,6 +157,14 @@ class DaggerFactoryRenderer(private val componentBuilder: TypeSpec.Builder, priv
             .build()
     }
 
+    private fun Binding.Self.toProperty(): PropertySpec {
+        val type = componentType.typeName()
+        val name = type!!.name().decapitalize()
+        return PropertySpec.builder(name, type, KModifier.PRIVATE)
+            .initializer(name)
+            .build()
+    }
+
     private fun ClassDescriptor.type() = if (isCompanionObject) {
         (containingDeclaration as ClassDescriptor).defaultType.typeName()
     } else {
@@ -163,5 +176,6 @@ class DaggerFactoryRenderer(private val componentBuilder: TypeSpec.Builder, priv
         is Binding.InstanceFunction -> "${parentType?.name()}_${value.resolvedDescriptor!!.name.asString().capitalize()}"
         is Binding.Constructor -> "${value.descriptor.constructedClass.name}"
         is Binding.Instance -> "${value.parameter.type.typeName()?.name()}"
+        is Binding.Self -> "component_${value.componentType.typeName()?.name()}"
     }
 }

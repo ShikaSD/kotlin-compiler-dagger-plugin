@@ -21,10 +21,28 @@ class TestCompilerSubplugin: KotlinGradleSubplugin<AbstractCompile> {
         kotlinCompilation: KotlinCompilation<KotlinCommonOptions>?
     ): List<SubpluginOption> {
         val extension = project.extensions.findByType(TestCompilerExtension::class.java) ?: TestCompilerExtension()
-        val sourceSet = kotlinCompilation?.defaultSourceSet
-        val sources = File(project.buildDir, "generated/source/di-compiler/${sourceSet?.name}/")
-        sourceSet?.kotlin?.srcDir(sources)
-        sourceSet?.kotlin?.exclude { it.file.startsWith(sources) }// FIXME tries to compile them
+
+        val sourceSetName = if (variantData != null) {
+            // Lol
+            variantData.javaClass.getMethod("getName").run {
+                isAccessible = true
+                invoke(variantData) as String
+            }
+        } else {
+            if (kotlinCompilation == null) error("In non-Android projects, Kotlin compilation should not be null")
+            kotlinCompilation.compilationName
+        }
+
+        val sources = File(project.buildDir, "generated/source/di-compiler/$sourceSetName/")
+        kotlinCompilation?.allKotlinSourceSets?.forEach {
+            it.kotlin.srcDir(sources)
+            it.kotlin.exclude { it.file.startsWith(sources) }
+        }
+
+        variantData?.javaClass?.methods?.first { it.name =="addJavaSourceFoldersToModel" }?.apply {
+            isAccessible = true
+            invoke(variantData, sources)
+        }
 
         return listOf(
             SubpluginOption(

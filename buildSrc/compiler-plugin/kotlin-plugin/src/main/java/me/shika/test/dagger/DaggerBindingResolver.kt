@@ -40,7 +40,10 @@ class DaggerBindingResolver(
         val canProvide = bindingDescriptor.bindings.filter {
             val returnType = it.type ?: return@filter false
             NewKotlinTypeChecker.equalTypes(returnType, this)
-        } + listOfNotNull(injectableConstructor())
+        } + listOfNotNull(
+            injectableConstructor(),
+            Binding.Self(this).takeIf { NewKotlinTypeChecker.equalTypes(this, component.definition.defaultType) }
+        )
 
         if (canProvide.isEmpty()) {
             reporter.report(

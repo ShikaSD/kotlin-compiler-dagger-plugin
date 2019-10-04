@@ -5,6 +5,7 @@ import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.Dynamic
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.KModifier.INTERNAL
 import com.squareup.kotlinpoet.KModifier.OVERRIDE
 import com.squareup.kotlinpoet.KModifier.PRIVATE
 import com.squareup.kotlinpoet.LambdaTypeName
@@ -22,6 +23,7 @@ import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.parentOrNull
 import org.jetbrains.kotlin.renderer.render
@@ -45,6 +47,11 @@ class DaggerComponentRenderer(
 
     private fun renderComponent(results: List<ResolveResult>): TypeSpec =
         TypeSpec.classBuilder(componentDescriptor.nameString())
+            .apply {
+                if (definition.visibility == Visibilities.INTERNAL) {
+                    addModifiers(INTERNAL)
+                }
+            }
             .extendComponent()
             .createFactory()
             .addDependencyInstances()

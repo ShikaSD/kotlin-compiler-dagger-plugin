@@ -6,6 +6,7 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
+import org.jetbrains.kotlin.types.KotlinType
 
 data class GraphNode(val value: Binding, val dependencies: List<GraphNode>)
 
@@ -36,6 +37,10 @@ sealed class Injectable {
 sealed class Binding {
     abstract val scopes: List<AnnotationDescriptor>
 
+    data class Self(val componentType: KotlinType): Binding() {
+        override val scopes: List<AnnotationDescriptor> = emptyList()
+    }
+
     data class Instance(
         val parameter: ValueParameterDescriptor
     ) : Binding() {
@@ -63,10 +68,12 @@ sealed class Binding {
         is StaticFunction -> descriptor
         is Constructor -> descriptor
         is Instance -> null
+        is Self -> null
     }
 
     val type get() = when (this) {
         is Instance -> parameter.type
+        is Self -> componentType
         else -> resolvedDescriptor!!.returnType
     }
 }
