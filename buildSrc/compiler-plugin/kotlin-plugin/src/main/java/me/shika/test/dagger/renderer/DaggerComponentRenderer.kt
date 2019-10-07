@@ -1,4 +1,4 @@
-package me.shika.test.dagger
+package me.shika.test.dagger.renderer
 
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
@@ -16,9 +16,11 @@ import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.WildcardTypeName
+import me.shika.test.dagger.resolver.DaggerComponentDescriptor
+import me.shika.test.dagger.resolver.classDescriptor
+import me.shika.test.dagger.resolver.creator.DaggerFactoryDescriptor
 import me.shika.test.model.Endpoint
 import me.shika.test.model.ResolveResult
-import me.shika.test.resolver.classDescriptor
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -29,6 +31,7 @@ import org.jetbrains.kotlin.name.parentOrNull
 import org.jetbrains.kotlin.renderer.render
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.KotlinType
+import java.io.File
 
 class DaggerComponentRenderer(
     private val componentDescriptor: DaggerComponentDescriptor,
@@ -40,10 +43,13 @@ class DaggerComponentRenderer(
         componentDescriptor.nameString()
     )
 
-    fun render(results: List<ResolveResult>): FileSpec =
-        FileSpec.builder(componentClassName.packageName, componentClassName.simpleName)
-            .addType(renderComponent(results))
+    fun render(sourcesDir: File) {
+        val fileSpec = FileSpec.builder(componentClassName.packageName, componentClassName.simpleName)
+            .addType(renderComponent(componentDescriptor.graph))
             .build()
+
+        fileSpec.writeTo(sourcesDir)
+    }
 
     private fun renderComponent(results: List<ResolveResult>): TypeSpec =
         TypeSpec.classBuilder(componentDescriptor.nameString())
@@ -67,17 +73,18 @@ class DaggerComponentRenderer(
     }
 
     private fun TypeSpec.Builder.createFactory() = apply {
+        val method = (componentDescriptor.creatorDescriptor as DaggerFactoryDescriptor).method!!
+        val factoryName = (method.containingDeclaration as ClassDescriptor).className()
         addType(
             TypeSpec.classBuilder("Factory")
                 .apply {
-                    val factoryMethod = componentDescriptor.factoryDescriptor.factoryMethod
-                    addSuperinterface(componentDescriptor.factoryDescriptor.factory.className())
+                    addSuperinterface(factoryName)
                     addModifiers(PRIVATE)
                     addFunction(
-                        FunSpec.builder(factoryMethod.name.asString())
+                        FunSpec.builder(method.name.asString())
                             .addModifiers(OVERRIDE)
                             .apply {
-                                factoryMethod.valueParameters.forEach {
+                                method.valueParameters.forEach {
                                     addParameter(
                                         ParameterSpec.builder(it.name.asString(), it.type.typeName()!!)
                                             .build()
@@ -87,7 +94,7 @@ class DaggerComponentRenderer(
                             .returns(componentClassName)
                             .addCode(
                                 CodeBlock.of(
-                                    "return ${componentDescriptor.nameString()}(${factoryMethod.valueParameters.joinToString { it.name.asString() }})"
+                                    "return ${componentDescriptor.nameString()}(${method.valueParameters.joinToString { it.name.asString() }})"
                                 )
                             )
                             .build()
@@ -100,7 +107,7 @@ class DaggerComponentRenderer(
             TypeSpec.companionObjectBuilder()
                 .addFunction(
                     FunSpec.builder("factory")
-                        .returns(componentDescriptor.factoryDescriptor.factory.className())
+                        .returns(factoryName)
                         .addCode(
                             CodeBlock.of(
                                 "return Factory()"
@@ -113,7 +120,7 @@ class DaggerComponentRenderer(
     }
 
     private fun TypeSpec.Builder.addDependencyInstances() = apply {
-        val properties = componentDescriptor.factoryDescriptor.factoryMethod.valueParameters.mapNotNull { it.type }.map {
+        val properties = (componentDescriptor.creatorDescriptor as DaggerFactoryDescriptor).method!!.valueParameters.mapNotNull { it.type }.map {
             val name = it.typeName()?.name()!!.decapitalize()
             PropertySpec.builder(name, it.typeName()!!, PRIVATE)
                 .initializer(name)
@@ -132,12 +139,13 @@ class DaggerComponentRenderer(
 
     private fun TypeSpec.Builder.addBindings(results: List<ResolveResult>) = apply {
         val factoryRenderer = DaggerFactoryRenderer(this, componentClassName)
-        val membersInjectorRenderer = DaggerMembersInjectorRenderer(this, componentClassName, factoryRenderer)
+        val membersInjectorRenderer =
+            DaggerMembersInjectorRenderer(this, componentClassName, factoryRenderer)
         results.groupBy { it.endpoint.source }
             .map { (_, results) ->
                 val result = results.first()
                 when (val endpoint = result.endpoint) {
-                    is Endpoint.Exposed -> {
+                    is Endpoint.Provided -> {
                         val factory = factoryRenderer.getFactory(result.graph.single())
                         addFunction(endpoint.source, override = true) {
                             addCode("return %N.get()", factory)

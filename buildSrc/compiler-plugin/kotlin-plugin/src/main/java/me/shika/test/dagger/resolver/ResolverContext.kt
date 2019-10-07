@@ -1,4 +1,4 @@
-package me.shika.test.resolver
+package me.shika.test.dagger.resolver
 
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.resolve.BindingTrace

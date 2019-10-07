@@ -1,7 +1,9 @@
 package me.shika.test
 
-import me.shika.test.dagger.*
-import me.shika.test.resolver.ResolverContext
+import me.shika.test.dagger.renderer.DaggerComponentRenderer
+import me.shika.test.dagger.resolver.DaggerComponentDescriptor
+import me.shika.test.dagger.resolver.ResolverContext
+import me.shika.test.dagger.resolver.isComponent
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
@@ -21,7 +23,7 @@ class DiCompilerAnalysisExtension(
     private val sourcesDir: File,
     private val reporter: MessageCollector
 ) : AnalysisHandlerExtension {
-    private var generatedFiles = false // fixme one more hack
+    private var generatedFiles = false
 
     override fun doAnalysis(
         project: Project,
@@ -33,11 +35,12 @@ class DiCompilerAnalysisExtension(
     ): AnalysisResult? {
         if (generatedFiles) return null
 
-        val addedFiles = mutableListOf<File>()
         val resolveSession = componentProvider.get<ResolveSession>()
         val resolverContext = ResolverContext(module, bindingTrace, resolveSession)
 
         files.forEach { file ->
+            val diagnosticCount = bindingTrace.bindingContext.diagnostics.all().size
+
             file.accept(
                 classRecursiveVisitor { ktClass ->
                     val classDescriptor = resolveSession.resolveToDescriptor(ktClass) as ClassDescriptor
@@ -47,25 +50,18 @@ class DiCompilerAnalysisExtension(
                             file,
                             resolverContext
                         )
-                        val bindings = DaggerBindingDescriptor(component)
-                        val resolver = DaggerBindingResolver(reporter, bindings)
+
+                        if (bindingTrace.bindingContext.diagnostics.all().size != diagnosticCount) {
+                            // No need to render, something is wrong with component
+                            return@classRecursiveVisitor
+                        }
+
                         val renderer = DaggerComponentRenderer(component, reporter)
-
-                        val fileSpec = renderer.render(resolver.resolve())
-                        fileSpec.writeTo(sourcesDir)
-
-                        val filePath = fileSpec.packageName.split('.')
-                            .dropLastWhile { it.isEmpty() }
-                            .takeIf { !it.isEmpty() }
-                            ?.joinToString(File.separator, postfix = File.separator)
-                            .orEmpty()
-                        addedFiles += sourcesDir.resolve(filePath + "${fileSpec.name}.kt")
+                        renderer.render(sourcesDir)
                     }
                 }
             )
         }
-
-        if (addedFiles.isEmpty()) return AnalysisResult.Companion.success(bindingTrace.bindingContext, module)
 
         generatedFiles = true
         return if (bindingTrace.bindingContext.diagnostics.isEmpty()) {
@@ -73,8 +69,8 @@ class DiCompilerAnalysisExtension(
                 bindingContext = bindingTrace.bindingContext,
                 moduleDescriptor = module,
                 additionalJavaRoots = emptyList(),
-                additionalKotlinRoots = addedFiles
-            ) // Repeat with my files pls
+                additionalKotlinRoots = listOf(sourcesDir)
+            )
         } else {
             AnalysisResult.compilationError(bindingTrace.bindingContext)
         }
@@ -85,8 +81,5 @@ class DiCompilerAnalysisExtension(
         module: ModuleDescriptor,
         bindingTrace: BindingTrace,
         files: Collection<KtFile>
-    ): AnalysisResult? {
-
-        return null
-    }
+    ): AnalysisResult? = null
 }

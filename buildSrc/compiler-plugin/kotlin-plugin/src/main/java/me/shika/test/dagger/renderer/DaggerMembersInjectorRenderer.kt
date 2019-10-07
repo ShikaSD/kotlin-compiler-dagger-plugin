@@ -1,6 +1,13 @@
-package me.shika.test.dagger
+package me.shika.test.dagger.renderer
 
-import com.squareup.kotlinpoet.*
+import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.CodeBlock
+import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.ParameterizedTypeName
+import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.TypeSpec
 import me.shika.test.model.Endpoint
 import me.shika.test.model.Injectable
 import me.shika.test.model.ResolveResult
@@ -26,7 +33,11 @@ class DaggerMembersInjectorRenderer(
 
         val factoryParams = injectedFactories.flatMap { it.second }.filterNotNull().distinct()
 
-        val type = classWithFactories(factoryParams, injectorTypeName, injectedTypeName.injector())
+        val type = classWithFactories(
+            factoryParams,
+            injectorTypeName,
+            injectedTypeName.injector()
+        )
             .addFunction(
                 FunSpec.builder("injectMembers")
                     .addModifiers(KModifier.OVERRIDE)

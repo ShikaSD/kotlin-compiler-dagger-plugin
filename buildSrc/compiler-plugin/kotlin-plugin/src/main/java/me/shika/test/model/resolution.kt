@@ -2,6 +2,7 @@ package me.shika.test.model
 
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
@@ -15,12 +16,12 @@ data class ResolveResult(val endpoint: Endpoint, val graph: List<GraphNode>)
 sealed class Endpoint {
     abstract val source: FunctionDescriptor
 
-    data class Exposed(override val source: FunctionDescriptor) : Endpoint()
+    data class Provided(override val source: FunctionDescriptor) : Endpoint()
     data class Injected(override val source: FunctionDescriptor, val value: Injectable) : Endpoint()
 
     val types get() = when (this) {
         is Injected -> value.types
-        is Exposed -> listOf(source.returnType)
+        is Provided -> listOf(source.returnType)
     }
 }
 
@@ -34,46 +35,23 @@ sealed class Injectable {
     }
 }
 
-sealed class Binding {
-    abstract val scopes: List<AnnotationDescriptor>
+data class Key(
+    val type: KotlinType,
+    val qualifiers: List<AnnotationDescriptor>
+)
 
-    data class Self(val componentType: KotlinType): Binding() {
-        override val scopes: List<AnnotationDescriptor> = emptyList()
-    }
+data class Binding(
+    val key: Key,
+    val scopes: List<AnnotationDescriptor>,
+    val bindingType: Variation
+) {
+    sealed class Variation {
+        abstract val source: DeclarationDescriptor
 
-    data class Instance(
-        val parameter: ValueParameterDescriptor
-    ) : Binding() {
-        override val scopes: List<AnnotationDescriptor> = emptyList()
-    }
-
-    data class InstanceFunction(
-        val instance: ClassDescriptor,
-        val descriptor: FunctionDescriptor,
-        override val scopes: List<AnnotationDescriptor>
-    ): Binding()
-
-    data class StaticFunction(
-        val descriptor: FunctionDescriptor,
-        override val scopes: List<AnnotationDescriptor>
-    ): Binding()
-
-    data class Constructor(
-        val descriptor: ClassConstructorDescriptor,
-        override val scopes: List<AnnotationDescriptor>
-    ): Binding()
-
-    val resolvedDescriptor get() = when (this) {
-        is InstanceFunction -> descriptor
-        is StaticFunction -> descriptor
-        is Constructor -> descriptor
-        is Instance -> null
-        is Self -> null
-    }
-
-    val type get() = when (this) {
-        is Instance -> parameter.type
-        is Self -> componentType
-        else -> resolvedDescriptor!!.returnType
+        data class Constructor(override val source: ClassConstructorDescriptor): Variation()
+        data class InstanceFunction(override val source: FunctionDescriptor): Variation()
+        data class StaticFunction(override val source: FunctionDescriptor): Variation()
+        data class BoundInstance(override val source: ValueParameterDescriptor): Variation()
+        data class Component(override val source: ClassDescriptor) : Variation()
     }
 }

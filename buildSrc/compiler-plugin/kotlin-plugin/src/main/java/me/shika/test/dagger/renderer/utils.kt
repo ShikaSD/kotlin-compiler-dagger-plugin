@@ -1,15 +1,11 @@
-package me.shika.test.dagger
+package me.shika.test.dagger.renderer
 
-import com.squareup.kotlinpoet.*
-import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
-import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.resolve.descriptorUtil.annotationClass
-
-internal fun DeclarationDescriptor.scopeAnnotations(): List<AnnotationDescriptor> =
-    annotations.filter {
-        it.annotationClass?.annotations?.hasAnnotation(SCOPE_FQ_NAME) == true
-    }
+import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.ParameterSpec
+import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.TypeSpec
 
 internal fun <T> T?.ifNull(action: () -> T?): T? =
     this ?: action()
@@ -25,7 +21,7 @@ internal fun PropertySpec.toParameter() =
     ParameterSpec.builder(name, type, *modifiers.toTypedArray())
         .build()
 
-fun classWithFactories(
+internal fun classWithFactories(
     factories: List<PropertySpec>,
     type: ClassName,
     superInterface: TypeName
@@ -47,4 +43,3 @@ fun classWithFactories(
         )
 }
 
-private val SCOPE_FQ_NAME = FqName("javax.inject.Scope")
