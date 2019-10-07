@@ -4,6 +4,7 @@ import dagger.Module
 import dagger.Provides
 import java.io.File
 import javax.inject.Inject
+import javax.inject.Qualifier
 import javax.inject.Scope
 
 @TestScope
@@ -26,6 +27,8 @@ interface Main : Common {
     fun test2(): Long
     fun file(): File
     fun test3(): List<Long>
+    @TestQualifier
+    fun qualifiedInteger(): Int
 }
 
 interface Common {
@@ -37,6 +40,8 @@ interface Common {
 
 interface Dependency {
     fun file(): File
+    @TestQualifier
+    fun qualifiedInt(): Int
 }
 
 @Module
@@ -96,6 +101,9 @@ class TestModuleInstance(val int: Int) {
 @Scope
 annotation class TestScope
 
+@Qualifier
+annotation class TestQualifier
+
 @Module
 abstract class AbstractModule {
 
@@ -119,8 +127,9 @@ fun main(args: Array<String>) {
         .build(
             object : Dependency {
                 override fun file() = File("")
+                override fun qualifiedInt(): Int = 999
             },
-            TestModuleInstance(3),
+            TestModuleInstance(0),
             listOf()
         )
 
@@ -137,4 +146,6 @@ fun main(args: Array<String>) {
 
     println(component.test2())
     println(component.file())
+
+    println(component.qualifiedInteger())
 }

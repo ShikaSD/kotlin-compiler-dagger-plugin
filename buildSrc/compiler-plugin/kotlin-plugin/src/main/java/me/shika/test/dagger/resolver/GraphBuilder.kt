@@ -35,7 +35,7 @@ class GraphBuilder(
     private fun Endpoint.resolveDependencies(): ResolveResult {
         val nodes = types.mapNotNull {
             try {
-                cachedNodeResolve(CallParam(it!!, source, source.qualifiers()))
+                cachedNodeResolve(CallParam(it!!, source, qualifiers))
             } catch (e: Exception) {
                 // TODO: record stack + error
                 null
@@ -45,30 +45,32 @@ class GraphBuilder(
     }
 
     private fun KotlinType.resolveNode(source: DeclarationDescriptor, qualifiers: List<AnnotationDescriptor>): GraphNode {
-        val provisionBindings = bindings.filter {
-            this applicableTo it.key.type && qualifiers == it.key.qualifiers
+        val applicableBindings = bindings.filter {
+            // TODO extract
+            this applicableTo it.key.type &&
+                qualifiers.map { it.fqName } == it.key.qualifiers.map { it.fqName }
         }
-        val providers = if (provisionBindings.isEmpty()) {
+        val bindings = if (applicableBindings.isEmpty()) {
             listOfNotNull(injectableConstructor())
         } else {
-            provisionBindings
+            applicableBindings
         }
 
-        if (providers.isEmpty()) {
+        if (bindings.isEmpty()) {
             source.report(trace) {
                 NO_BINDINGS_FOUND.on(it, this)
             }
             throw RuntimeException()
         }
 
-        if (providers.size > 1) {
+        if (bindings.size > 1) {
             source.report(trace) {
-                AMBIGUOUS_BINDINGS.on(it, this, providers.map { it.bindingType.source })
+                AMBIGUOUS_BINDINGS.on(it, this, bindings.map { it.bindingType.source })
             }
             throw RuntimeException()
         }
 
-        val binding = providers.first()
+        val binding = bindings.first()
 
         if (!componentScopeFqNames.containsAll(binding.scopes.map { it.fqName })) {
             source.report(trace) {

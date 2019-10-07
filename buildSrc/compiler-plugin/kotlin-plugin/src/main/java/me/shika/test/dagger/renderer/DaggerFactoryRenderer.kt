@@ -16,12 +16,14 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.utils.addIfNotNull
 
 class DaggerFactoryRenderer(private val componentBuilder: TypeSpec.Builder, private val componentName: ClassName) {
+    private val bindingToProp = mutableMapOf<Binding, PropertySpec>()
+
     fun getFactory(graphNode: GraphNode): PropertySpec? {
         val signature = graphNode.value.bindingType.source as? FunctionDescriptor
         val returnType = graphNode.value.key.type.typeName() ?: return null // FIXME report
         val providerType = returnType.provider()
 
-        return componentBuilder.propertySpecs.find { it.type == providerType }.ifNull {
+        return bindingToProp.getOrPut(graphNode.value) {
             componentBuilder.addFactory(graphNode, signature, returnType, providerType)
         }
     }
@@ -31,7 +33,7 @@ class DaggerFactoryRenderer(private val componentBuilder: TypeSpec.Builder, priv
         signature: FunctionDescriptor?,
         returnType: TypeName,
         providerType: TypeName
-    ): PropertySpec? {
+    ): PropertySpec {
         val parent = signature?.containingDeclaration as? ClassDescriptor
         val parentType = parent?.type() ?: graphNode.value.key.type.typeName()
         val name = graphNode.bindingName(parentType)

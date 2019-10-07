@@ -6,6 +6,7 @@ import me.shika.test.dagger.resolver.ResolverContext
 import me.shika.test.dagger.resolver.allDescriptors
 import me.shika.test.dagger.resolver.classDescriptor
 import me.shika.test.dagger.resolver.isFromAny
+import me.shika.test.dagger.resolver.qualifiers
 import me.shika.test.model.Endpoint
 import me.shika.test.model.Injectable
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
@@ -33,12 +34,12 @@ class InjectionEndpointResolver(
                 val cls = func.valueParameters.first().type.classDescriptor()!!
                 val fields = cls.findInjectedFields()
                     .map {
-                        Endpoint.Injected(func, Injectable.Property(cls, it))
+                        Endpoint.Injected(func, Injectable.Property(cls, it), it.qualifiers())
                     }
 
                 val setters = cls.findInjectedSetters()
                     .map {
-                        Endpoint.Injected(func, Injectable.Setter(cls, it))
+                        Endpoint.Injected(func, Injectable.Setter(cls, it), it.qualifiers())
                     }
 
                 fields + setters

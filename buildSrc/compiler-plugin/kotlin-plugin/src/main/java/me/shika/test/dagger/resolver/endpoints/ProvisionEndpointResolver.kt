@@ -4,6 +4,7 @@ import me.shika.test.dagger.resolver.ComponentAnnotationDescriptor
 import me.shika.test.dagger.resolver.ResolverContext
 import me.shika.test.dagger.resolver.allDescriptors
 import me.shika.test.dagger.resolver.isFromAny
+import me.shika.test.dagger.resolver.qualifiers
 import me.shika.test.model.Endpoint
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -25,7 +26,7 @@ class ProvisionEndpointResolver(
 
         return componentFunctions
             .filter { it.isProvisionEndpoint() }
-            .map { Endpoint.Provided(it) }
+            .map { Endpoint.Provided(it, it.qualifiers()) }
             .toList()
     }
 

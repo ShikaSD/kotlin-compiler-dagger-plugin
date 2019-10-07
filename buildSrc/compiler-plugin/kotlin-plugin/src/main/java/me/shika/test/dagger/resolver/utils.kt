@@ -24,7 +24,6 @@ import org.jetbrains.kotlin.resolve.scopes.getDescriptorsFiltered
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.checker.KotlinTypeChecker
 import org.jetbrains.kotlin.types.typeUtil.isInt
-import org.jetbrains.kotlin.types.typeUtil.makeNullable
 
 internal fun KotlinType.classDescriptor() = constructor.declarationDescriptor as? ClassDescriptor
 
@@ -70,9 +69,5 @@ internal fun AnnotationDescriptor.classListValue(context: ResolverContext, name:
 internal fun ClassDescriptor.isInstance() =
     !DescriptorUtils.isObject(this) && modality != Modality.ABSTRACT
 
-/**
- * We can provide not null value to nullable request
- */
 internal infix fun KotlinType.applicableTo(type: KotlinType) =
-    KotlinTypeChecker.DEFAULT.equalTypes(this, type) ||
-        KotlinTypeChecker.DEFAULT.equalTypes(this.makeNullable(), type)
+    KotlinTypeChecker.DEFAULT.equalTypes(this, type)

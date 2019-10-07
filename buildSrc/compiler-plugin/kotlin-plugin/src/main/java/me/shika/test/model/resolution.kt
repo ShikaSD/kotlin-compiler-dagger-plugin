@@ -15,9 +15,14 @@ data class ResolveResult(val endpoint: Endpoint, val graph: List<GraphNode>)
 
 sealed class Endpoint {
     abstract val source: FunctionDescriptor
+    abstract val qualifiers: List<AnnotationDescriptor>
 
-    data class Provided(override val source: FunctionDescriptor) : Endpoint()
-    data class Injected(override val source: FunctionDescriptor, val value: Injectable) : Endpoint()
+    data class Provided(override val source: FunctionDescriptor, override val qualifiers: List<AnnotationDescriptor>) : Endpoint()
+    data class Injected(
+        override val source: FunctionDescriptor,
+        val value: Injectable,
+        override val qualifiers: List<AnnotationDescriptor>
+    ) : Endpoint()
 
     val types get() = when (this) {
         is Injected -> value.types
