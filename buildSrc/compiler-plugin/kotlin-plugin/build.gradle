@@ -2,12 +2,12 @@ apply plugin: "org.jetbrains.kotlin.jvm"
 apply plugin: "kotlin-kapt"
 apply plugin: "maven"
 
-group "me.shika.test"
+group "me.shika.di"
 version "0.0.1-SNAPSHOT"
 
 install {
     repositories.mavenInstaller {
-        pom.artifactId = 'di-kotlin-compiler-plugin'
+        pom.artifactId = 'dagger-kotlin-compiler-plugin'
     }
 }
 

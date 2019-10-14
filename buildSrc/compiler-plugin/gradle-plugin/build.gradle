@@ -1,22 +1,26 @@
+plugins {
+    id 'java-gradle-plugin'
+}
+
 apply plugin: "java-gradle-plugin"
 apply plugin: "org.jetbrains.kotlin.jvm"
 apply plugin: "kotlin-kapt"
 apply plugin: "maven"
 
-group "me.shika.test"
+group "me.shika.di"
 version "0.0.1-SNAPSHOT"
 
 install {
     repositories.mavenInstaller {
-        pom.artifactId = 'di-compiler-gradle-plugin'
+        pom.artifactId = 'dagger-compiler-gradle-plugin'
     }
 }
 
 gradlePlugin {
     plugins {
         simplePlugin {
-            id = "di-compiler-plugin"
-            implementationClass = "me.shika.test.TestCompilerPlugin"
+            id = "dagger-compiler-plugin"
+            implementationClass = "me.shika.di.DiCompilerPlugin"
         }
     }
 }
