@@ -3,7 +3,7 @@ apply plugin: "kotlin-kapt"
 apply plugin: "maven"
 
 group "me.shika.di"
-version "0.0.1-SNAPSHOT"
+version "0.0.1-preview"
 
 install {
     repositories.mavenInstaller {

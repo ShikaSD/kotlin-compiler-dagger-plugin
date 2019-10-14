@@ -1,5 +1,5 @@
 plugins {
-    id 'java-gradle-plugin'
+    id 'com.gradle.plugin-publish' version '0.10.1'
 }
 
 apply plugin: "java-gradle-plugin"
@@ -8,7 +8,13 @@ apply plugin: "kotlin-kapt"
 apply plugin: "maven"
 
 group "me.shika.di"
-version "0.0.1-SNAPSHOT"
+version "0.0.1-preview"
+
+pluginBundle {
+    website = 'https://github.com/ShikaSD/kotlin-compiler-di'
+    vcsUrl = 'https://github.com/ShikaSD/kotlin-compiler-di.git'
+    tags = ['kotlin', 'compiler-plugin', 'di', 'dagger2']
+}
 
 install {
     repositories.mavenInstaller {
@@ -18,8 +24,10 @@ install {
 
 gradlePlugin {
     plugins {
-        simplePlugin {
-            id = "dagger-compiler-plugin"
+        diPlugin {
+            id = "me.shika.dagger-compiler-plugin"
+            displayName = "Dagger 2 compiler plugin"
+            description = "Experiment on implementation of dagger2 code generation through Kotlin compiler"
             implementationClass = "me.shika.di.DiCompilerPlugin"
         }
     }

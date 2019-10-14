@@ -39,6 +39,7 @@ class DiCompilerSubplugin: KotlinGradleSubplugin<AbstractCompile> {
             it.kotlin.exclude { it.file.startsWith(sources) }
         }
 
+        // Lol #2
         variantData?.javaClass?.methods?.first { it.name =="addJavaSourceFoldersToModel" }?.apply {
             isAccessible = true
             invoke(variantData, sources)
@@ -62,7 +63,7 @@ class DiCompilerSubplugin: KotlinGradleSubplugin<AbstractCompile> {
         SubpluginArtifact(
             groupId = "me.shika.di",
             artifactId = "dagger-kotlin-compiler-plugin",
-            version = "0.0.1-SNAPSHOT"
+            version = "0.0.1-preview"
         )
 
     override fun isApplicable(project: Project, task: AbstractCompile): Boolean =
