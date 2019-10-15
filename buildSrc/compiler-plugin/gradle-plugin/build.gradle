@@ -8,7 +8,14 @@ apply plugin: "kotlin-kapt"
 apply plugin: "maven"
 
 group "me.shika.di"
-version "0.0.1-preview"
+version "0.0.2-preview"
+
+configurations {
+    embedded {
+        transitive = false
+    }
+    implementation.extendsFrom(embedded)
+}
 
 pluginBundle {
     website = 'https://github.com/ShikaSD/kotlin-compiler-di'
@@ -17,8 +24,13 @@ pluginBundle {
 }
 
 install {
-    repositories.mavenInstaller {
-        pom.artifactId = 'dagger-compiler-gradle-plugin'
+    repositories {
+        mavenInstaller {
+            pom.artifactId = 'dagger-compiler-plugin'
+            pom.whenConfigured {
+                println pom.getGeneratedDependencies()
+            }
+        }
     }
 }
 
@@ -38,4 +50,38 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-gradle-plugin-api"
     compileOnly "com.google.auto.service:auto-service:1.0-rc4"
     kapt "com.google.auto.service:auto-service:1.0-rc4"
+
+    embedded project(':compiler-plugin:kotlin-plugin')
+
+    embeddedProjects().collect { it.configurations.findByName("published") }
+        .forEach {
+            it.dependencies.forEach {
+                runtime "$it.group:$it.name:$it.version"
+            }
+        }
+}
+
+jar {
+    from project.configurations.embedded.collect {
+        zipTree(it)
+    }
+    embeddedProjects()
+        .collect { it.configurations.findByName('published') }
+}
+
+task sourcesJar(type: Jar) {
+    archiveClassifier = 'sources'
+    from embeddedProjects().collect { it.sourceSets.main.allSource }
+}
+
+artifacts {
+    archives sourcesJar
+}
+
+def embeddedProjects() {
+    return project.configurations.findByName('embedded')
+        .resolvedConfiguration
+        .resolvedArtifacts
+        .findAll { it.id.componentIdentifier instanceof ProjectComponentIdentifier }
+        .collect { project(it.id.componentIdentifier.projectPath) }
 }

@@ -62,8 +62,8 @@ class DiCompilerSubplugin: KotlinGradleSubplugin<AbstractCompile> {
     override fun getPluginArtifact(): SubpluginArtifact =
         SubpluginArtifact(
             groupId = "me.shika.di",
-            artifactId = "dagger-kotlin-compiler-plugin",
-            version = "0.0.1-preview"
+            artifactId = "dagger-compiler-plugin",
+            version = "0.0.2-preview"
         )
 
     override fun isApplicable(project: Project, task: AbstractCompile): Boolean =

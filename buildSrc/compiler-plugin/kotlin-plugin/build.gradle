@@ -1,27 +1,23 @@
 apply plugin: "org.jetbrains.kotlin.jvm"
 apply plugin: "kotlin-kapt"
-apply plugin: "maven"
 
 group "me.shika.di"
-version "0.0.1-preview"
+version "0.0.2-preview"
 
-install {
-    repositories.mavenInstaller {
-        pom.artifactId = 'dagger-kotlin-compiler-plugin'
-    }
-}
-
-repositories {
-    mavenLocal()
+configurations {
+    published
+    implementation.extendsFrom(published)
 }
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib"
     implementation "org.jetbrains.kotlin:kotlin-gradle-plugin-api"
-    implementation "org.jetbrains.kotlin:kotlin-gradle-plugin-model"
+    published "org.jetbrains.kotlin:kotlin-gradle-plugin-model"
+    published 'com.squareup:kotlinpoet:1.3.0'
+
     compileOnly "org.jetbrains.kotlin:kotlin-compiler-embeddable"
-    implementation 'com.squareup:kotlinpoet:1.3.0'
     compileOnly "com.google.auto.service:auto-service:1.0-rc4"
+
     kapt "com.google.auto.service:auto-service:1.0-rc4"
 }
 
