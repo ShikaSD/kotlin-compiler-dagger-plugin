@@ -8,7 +8,7 @@ apply plugin: "kotlin-kapt"
 apply plugin: "maven"
 
 group "me.shika.di"
-version "0.0.2-preview"
+version "0.0.1-preview"
 
 configurations {
     embedded {
@@ -21,15 +21,25 @@ pluginBundle {
     website = 'https://github.com/ShikaSD/kotlin-compiler-di'
     vcsUrl = 'https://github.com/ShikaSD/kotlin-compiler-di.git'
     tags = ['kotlin', 'compiler-plugin', 'di', 'dagger2']
+
+    plugins {
+        diPlugin {
+            displayName = "Dagger 2 Kotlin compiler plugin"
+            description = "Experiment on implementation of dagger2 code generation through Kotlin compiler"
+        }
+    }
+
+    mavenCoordinates {
+        groupId = project.getGroup()
+        artifactId = "dagger-compiler-plugin"
+        version = project.getVersion()
+    }
 }
 
 install {
     repositories {
         mavenInstaller {
             pom.artifactId = 'dagger-compiler-plugin'
-            pom.whenConfigured {
-                println pom.getGeneratedDependencies()
-            }
         }
     }
 }
@@ -38,8 +48,6 @@ gradlePlugin {
     plugins {
         diPlugin {
             id = "me.shika.dagger-compiler-plugin"
-            displayName = "Dagger 2 compiler plugin"
-            description = "Experiment on implementation of dagger2 code generation through Kotlin compiler"
             implementationClass = "me.shika.di.DiCompilerPlugin"
         }
     }
@@ -65,8 +73,6 @@ jar {
     from project.configurations.embedded.collect {
         zipTree(it)
     }
-    embeddedProjects()
-        .collect { it.configurations.findByName('published') }
 }
 
 task sourcesJar(type: Jar) {
@@ -85,3 +91,4 @@ def embeddedProjects() {
         .findAll { it.id.componentIdentifier instanceof ProjectComponentIdentifier }
         .collect { project(it.id.componentIdentifier.projectPath) }
 }
+
