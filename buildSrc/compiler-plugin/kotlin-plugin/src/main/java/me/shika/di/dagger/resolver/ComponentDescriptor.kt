@@ -33,6 +33,9 @@ class DaggerComponentDescriptor(
     var creatorDescriptor: CreatorDescriptor? = null
         private set
 
+    var parameters: List<Key> = emptyList()
+        private set
+
     lateinit var graph: List<ResolveResult>
         private set
 
@@ -54,6 +57,12 @@ class DaggerComponentDescriptor(
             creatorDescriptor?.let { CreatorInstanceBindingResolver(it) },
             { listOf(componentBinding()) }
         )
+
+        parameters = listOfNotNull(
+            componentAnnotation.moduleInstances.map { Key(it.defaultType) },
+            componentAnnotation.dependencies.map { Key(it.defaultType) },
+            creatorDescriptor?.instances?.map { it.key }
+        ).flatten()
 
         val endpointResolvers = listOf(
             ProvisionEndpointResolver(componentAnnotation, definition, context),

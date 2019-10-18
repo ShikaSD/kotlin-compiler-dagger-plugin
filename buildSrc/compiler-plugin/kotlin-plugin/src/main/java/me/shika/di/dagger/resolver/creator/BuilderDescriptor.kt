@@ -69,7 +69,7 @@ class DaggerBuilderDescriptor(
                 isValid = false
             }
 
-            if (!KotlinBuiltIns.isUnit(setter.returnType!!) || definition.defaultType.isSubtypeOf(setter.returnType!!)) {
+            if (!KotlinBuiltIns.isUnit(setter.returnType!!) && !definition.defaultType.isSubtypeOf(setter.returnType!!)) {
                 setter.report(context.trace) { BUILDER_SETTER_WRONG_RETURN_TYPE.on(it) }
                 isValid = false
             }

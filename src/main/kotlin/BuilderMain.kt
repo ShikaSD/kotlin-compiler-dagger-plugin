@@ -5,7 +5,7 @@ import dagger.Component
 interface BuilderMain {
     @Component.Builder
     interface Builder {
-        fun module(module: TestModuleInstance)
+        fun module(module: TestModuleInstance): Builder
         fun build(): BuilderMain
     }
 

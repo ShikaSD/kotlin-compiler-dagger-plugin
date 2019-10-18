@@ -107,6 +107,9 @@ class DaggerFactoryRenderer(private val componentBuilder: TypeSpec.Builder, priv
     ) = apply {
         val params = depsFactories.map { it.name }.toMutableList()
         componentBuilder.propertySpecs.find { it.type == parentType }?.let { params += it.name }
+        if (parentType?.asString() == componentName.asString().removePrefix("Dagger")) { // hack
+            params += "this"
+        }
 
         val doubleCheckName = MemberName(
             ClassName("dagger.internal", "DoubleCheck"),

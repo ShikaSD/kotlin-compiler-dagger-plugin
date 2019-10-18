@@ -1,20 +1,23 @@
 package me.shika.di.dagger.renderer.creator
 
 import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.CodeBlock
-import com.squareup.kotlinpoet.FunSpec
-import com.squareup.kotlinpoet.KModifier
-import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
+import me.shika.di.dagger.renderer.dsl.companionObject
+import me.shika.di.dagger.renderer.dsl.function
+import me.shika.di.dagger.renderer.dsl.markPrivate
+import me.shika.di.dagger.renderer.dsl.nestedClass
+import me.shika.di.dagger.renderer.dsl.overrideFunction
 import me.shika.di.dagger.renderer.typeName
 import me.shika.di.dagger.resolver.creator.DaggerFactoryDescriptor
+import me.shika.di.model.Key
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 
 class DaggerFactoryRenderer(
     private val componentClassName: ClassName,
+    private val constructorParams: List<Key>,
     private val builder: TypeSpec.Builder
 ) {
     fun render(factoryDescriptor: DaggerFactoryDescriptor) {
@@ -33,56 +36,37 @@ class DaggerFactoryRenderer(
         factoryMethod: FunctionDescriptor,
         isInterface: Boolean
     ) {
-        addType(
-            TypeSpec.classBuilder(FACTORY_IMPL_NAME).apply {
-                addModifiers(KModifier.PRIVATE)
-                if (isInterface) {
-                    addSuperinterface(factoryClassName)
-                } else {
-                    superclass(factoryClassName)
-                }
-                addFunction(
-                    FunSpec.builder(factoryMethod.name.asString())
-                        .addModifiers(KModifier.OVERRIDE)
-                        .apply {
-                            factoryMethod.valueParameters.forEach {
-                                addParameter(
-                                    ParameterSpec.builder(it.name.asString(), it.type.typeName()!!)
-                                        .build()
-                                )
-                            }
-                        }
-                        .returns(factoryMethod.returnType?.typeName()!!)
-                        .addCode(
-                            CodeBlock.of(
-                                "return %T(${factoryMethod.valueParameters.joinToString { it.name.asString() }})",
-                                componentClassName
-                            )
-                        )
-                        .build()
+        nestedClass(FACTORY_IMPL_NAME) {
+            markPrivate()
+            if (isInterface) {
+                addSuperinterface(factoryClassName)
+            } else {
+                superclass(factoryClassName)
+            }
+            overrideFunction(factoryMethod) {
+                addCode(
+                    "return %T(${factoryMethod.params()})",
+                    componentClassName
                 )
             }
-                .build()
-        )
+        }
     }
 
     private fun TypeSpec.Builder.factoryPublicMethod(factoryClassName: TypeName) {
-        addType(
-            TypeSpec.companionObjectBuilder()
-                .addFunction(
-                    FunSpec.builder("factory")
-                        .addAnnotation(ClassName("", "JvmStatic"))
-                        .returns(factoryClassName)
-                        .addCode(
-                            CodeBlock.of(
-                                "return $FACTORY_IMPL_NAME()"
-                            )
-                        )
-                        .build()
-                )
-                .build()
-        )
+        companionObject {
+            function("factory") {
+                returns(factoryClassName)
+                addCode("return $FACTORY_IMPL_NAME()")
+            }
+        }
     }
+
+    private fun FunctionDescriptor.params(): String =
+        constructorParams.mapNotNull { paramKey ->
+            valueParameters.find { param ->
+                param.type == paramKey.type && paramKey.qualifiers.all { param.annotations.hasAnnotation(it.fqName!!) }
+            }
+        }.joinToString { it.name.asString() }
 
     companion object {
         private const val FACTORY_IMPL_NAME = "Factory"

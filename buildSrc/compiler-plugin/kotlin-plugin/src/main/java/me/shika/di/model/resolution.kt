@@ -42,7 +42,7 @@ sealed class Injectable {
 
 data class Key(
     val type: KotlinType,
-    val qualifiers: List<AnnotationDescriptor>
+    val qualifiers: List<AnnotationDescriptor> = emptyList()
 )
 
 data class Binding(

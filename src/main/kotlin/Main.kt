@@ -148,4 +148,10 @@ fun main(args: Array<String>) {
     println(component.file())
 
     println(component.qualifiedInteger())
+
+    val builderComponent = DaggerBuilderMain.builder()
+        .module(TestModuleInstance(5))
+        .build()
+
+    println(builderComponent.integer())
 }
