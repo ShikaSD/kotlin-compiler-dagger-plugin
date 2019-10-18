@@ -21,10 +21,11 @@ Right now I have implemented the concept of:
 - provide external dependencies using factory
 - Support of `@BindsInstance` for components
 - `Qualifier`
+- `Builder`
 
 TODO (in any order):
-- `Builder`
-- `IntoSet`
+- Default builder
+- `IntoSet` / `IntoMap`
 - `Lazy` and `Provider` support
 - Subcomponents
 - Proper scope support
