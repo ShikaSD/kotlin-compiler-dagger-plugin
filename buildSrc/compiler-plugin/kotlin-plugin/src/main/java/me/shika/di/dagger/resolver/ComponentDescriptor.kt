@@ -2,11 +2,14 @@ package me.shika.di.dagger.resolver
 
 import me.shika.di.COMPONENT_NOT_ABSTRACT
 import me.shika.di.COMPONENT_TYPE_PARAMETER
+import me.shika.di.COMPONENT_WITH_FACTORY_AND_BUILDER
+import me.shika.di.COMPONENT_WITH_MULTIPLE_BUILDERS
 import me.shika.di.COMPONENT_WITH_MULTIPLE_FACTORIES
 import me.shika.di.dagger.resolver.bindings.CreatorInstanceBindingResolver
 import me.shika.di.dagger.resolver.bindings.DependencyBindingResolver
 import me.shika.di.dagger.resolver.bindings.ModuleBindingResolver
 import me.shika.di.dagger.resolver.creator.CreatorDescriptor
+import me.shika.di.dagger.resolver.creator.DaggerBuilderDescriptor
 import me.shika.di.dagger.resolver.creator.DaggerFactoryDescriptor
 import me.shika.di.dagger.resolver.endpoints.InjectionEndpointResolver
 import me.shika.di.dagger.resolver.endpoints.ProvisionEndpointResolver
@@ -27,15 +30,15 @@ class DaggerComponentDescriptor(
     val file: KtFile,
     val context: ResolverContext
 ) {
-    init {
-        parseDefinition()
-    }
-
     var creatorDescriptor: CreatorDescriptor? = null
         private set
 
     lateinit var graph: List<ResolveResult>
         private set
+
+    init {
+        parseDefinition()
+    }
 
     private fun parseDefinition() {
         val componentAnnotation = definition.componentAnnotation()?.let {
@@ -43,9 +46,7 @@ class DaggerComponentDescriptor(
         } ?: return
         val scopes = definition.scopeAnnotations()
 
-        creatorDescriptor = definition.findFactory()?.let { creatorClass ->
-            DaggerFactoryDescriptor(definition, creatorClass, componentAnnotation, context)
-        } // TODO: Builder
+        creatorDescriptor = definition.findCreator(componentAnnotation)
 
         val bindingResolvers = listOfNotNull(
             ModuleBindingResolver(componentAnnotation, definition, context),
@@ -80,16 +81,25 @@ class DaggerComponentDescriptor(
             else -> annotations.findAnnotation(DAGGER_COMPONENT_ANNOTATION)
         }
 
-    private fun ClassDescriptor.findFactory(): ClassDescriptor? {
-        val factories = innerClasses()
-            .filter { it.annotations.hasAnnotation(DAGGER_FACTORY_ANNOTATION) }
+    private fun ClassDescriptor.findCreator(componentAnnotation: ComponentAnnotationDescriptor): CreatorDescriptor? {
+        val innerClasses = innerClasses()
+        val factories = innerClasses.filter { it.annotations.hasAnnotation(DAGGER_FACTORY_ANNOTATION) }
+        val builders = innerClasses.filter { it.annotations.hasAnnotation(DAGGER_BUILDER_ANNOTATION) }
 
         if (factories.size > 1) {
             report(context.trace) { COMPONENT_WITH_MULTIPLE_FACTORIES.on(it, factories) }
-            return null
         }
 
-        return factories.firstOrNull()
+        if (builders.size > 1) {
+            report(context.trace) { COMPONENT_WITH_MULTIPLE_BUILDERS.on(it, builders) }
+        }
+
+        if (factories.isNotEmpty() && builders.isNotEmpty()) {
+            report(context.trace) { COMPONENT_WITH_FACTORY_AND_BUILDER.on(it, factories, builders) }
+        }
+
+        return factories.firstOrNull()?.let { DaggerFactoryDescriptor(definition, it, componentAnnotation, context) }
+            ?: builders.firstOrNull()?.let { DaggerBuilderDescriptor(definition, it, componentAnnotation, context) }
     }
 
     private fun componentBinding() = Binding(
@@ -101,6 +111,7 @@ class DaggerComponentDescriptor(
 
 private val DAGGER_COMPONENT_ANNOTATION = FqName("dagger.Component")
 private val DAGGER_FACTORY_ANNOTATION = FqName("dagger.Component.Factory")
+private val DAGGER_BUILDER_ANNOTATION = FqName("dagger.Component.Builder")
 
 private fun ClassDescriptor.innerClasses() =
     unsubstitutedMemberScope.getDescriptorsFiltered(DescriptorKindFilter.CLASSIFIERS) { true }

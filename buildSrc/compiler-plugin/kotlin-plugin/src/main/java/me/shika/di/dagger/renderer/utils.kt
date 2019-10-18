@@ -1,11 +1,14 @@
 package me.shika.di.dagger.renderer
 
 import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.ParameterSpec
+import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeName
-import com.squareup.kotlinpoet.TypeSpec
+import me.shika.di.dagger.resolver.classDescriptor
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.types.KotlinType
 
 internal fun <T> T?.ifNull(action: () -> T?): T? =
     this ?: action()
@@ -21,25 +24,23 @@ internal fun PropertySpec.toParameter() =
     ParameterSpec.builder(name, type, *modifiers.toTypedArray())
         .build()
 
-internal fun classWithFactories(
-    factories: List<PropertySpec>,
-    type: ClassName,
-    superInterface: TypeName
-): TypeSpec.Builder {
-    val properties = factories.map {
-        PropertySpec.builder(it.name, it.type, *it.modifiers.toTypedArray())
-            .initializer(it.name)
-            .build()
-    }
-
-    // Inner static class to generate binding
-    return TypeSpec.classBuilder(type)
-        .addSuperinterface(superInterface)
-        .addProperties(properties)
-        .primaryConstructor(
-            FunSpec.constructorBuilder()
-                .addParameters(properties.map { it.toParameter() })
-                .build()
-        )
+internal fun KotlinType.typeName(): TypeName? = classDescriptor()?.fqNameSafe?.let {
+    val types = arguments.map { it.type.typeName()!! }
+    val typed = ClassName(it.parent().asString(), it.shortName().asString())
+        .let {
+            if (types.isNotEmpty()) {
+                with(ParameterizedTypeName) {
+                    it.parameterizedBy(*types.toTypedArray())
+                }
+            } else {
+                it
+            }
+        }
+    typed.copy(nullable = this.isMarkedNullable)
 }
 
+fun ClassDescriptor.typeName() = if (isCompanionObject) {
+    (containingDeclaration as ClassDescriptor).defaultType.typeName()
+} else {
+    defaultType.typeName()
+}

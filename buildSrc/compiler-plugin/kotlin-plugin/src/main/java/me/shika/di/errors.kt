@@ -22,6 +22,8 @@ import org.jetbrains.kotlin.types.KotlinType
 val COMPONENT_NOT_ABSTRACT = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
 val COMPONENT_TYPE_PARAMETER = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
 val COMPONENT_WITH_MULTIPLE_FACTORIES = DiagnosticFactory1.create<PsiElement, List<ClassDescriptor>>(Severity.ERROR)
+val COMPONENT_WITH_MULTIPLE_BUILDERS = DiagnosticFactory1.create<PsiElement, List<ClassDescriptor>>(Severity.ERROR)
+val COMPONENT_WITH_FACTORY_AND_BUILDER = DiagnosticFactory2.create<PsiElement, List<ClassDescriptor>, List<ClassDescriptor>>(Severity.ERROR)
 
 val MODULE_WITHOUT_ANNOTATION = DiagnosticFactory1.create<PsiElement, ClassDescriptor>(Severity.ERROR)
 
@@ -29,6 +31,12 @@ val FACTORY_WRONG_METHOD = DiagnosticFactory1.create<PsiElement, List<FunctionDe
 val FACTORY_DEPENDENCIES_NOT_DECLARED = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
 val FACTORY_DEPENDENCIES_NOT_PROVIDED = DiagnosticFactory1.create<PsiElement, KotlinType>(Severity.ERROR)
 val FACTORY_MODULE_NOT_PROVIDED = DiagnosticFactory1.create<PsiElement, KotlinType>(Severity.ERROR)
+
+val BUILDER_WRONG_BUILD_METHOD = DiagnosticFactory1.create<PsiElement, List<DeclarationDescriptor>>(Severity.ERROR)
+val BUILDER_SETTER_TOO_MANY_PARAMS = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+val BUILDER_SETTER_WRONG_RETURN_TYPE = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+val BUILDER_DEPENDENCIES_NOT_PROVIDED = DiagnosticFactory1.create<PsiElement, KotlinType>(Severity.ERROR)
+val BUILDER_MODULE_NOT_PROVIDED = DiagnosticFactory1.create<PsiElement, KotlinType>(Severity.ERROR)
 
 val MORE_THAN_ONE_INJECT_CONSTRUCTOR = DiagnosticFactory1.create<PsiElement, ClassDescriptor>(Severity.ERROR)
 val NO_BINDINGS_FOUND = DiagnosticFactory1.create<PsiElement, KotlinType>(Severity.ERROR)
@@ -54,13 +62,24 @@ object DaggerErrorMessages : DefaultErrorMessages.Extension {
             DeclarationListRenderer()
         )
         MAP.put(
+            COMPONENT_WITH_MULTIPLE_BUILDERS,
+            "Component cannot have more than one builder definition: {0} found",
+            DeclarationListRenderer()
+        )
+        MAP.put(
+            COMPONENT_WITH_FACTORY_AND_BUILDER,
+            "Component with factory {0} cannot have builders: {1}",
+            DeclarationListRenderer(),
+            DeclarationListRenderer()
+        )
+        MAP.put(
             MODULE_WITHOUT_ANNOTATION,
             "Module does not have module annotation (used in {0})",
             DeclarationRenderer()
         )
         MAP.put(
             FACTORY_WRONG_METHOD,
-            "Factory should have single method returning component, found: {0}",
+            "Factory should have single abstract method returning component type, found: {0}",
             DeclarationListRenderer()
         )
         MAP.put(
@@ -75,6 +94,29 @@ object DaggerErrorMessages : DefaultErrorMessages.Extension {
         MAP.put(
             FACTORY_MODULE_NOT_PROVIDED,
             "Factory does not provide module instance {0}",
+            RENDER_TYPE
+        )
+        MAP.put(
+            BUILDER_WRONG_BUILD_METHOD,
+            "Component builder must contain one build method, found: {0}",
+            DeclarationListRenderer()
+        )
+        MAP.put(
+            BUILDER_SETTER_TOO_MANY_PARAMS,
+            "Component builder setter must contain only one parameter"
+        )
+        MAP.put(
+            BUILDER_SETTER_WRONG_RETURN_TYPE,
+            "Component builder setter must return Unit, builder type of builder supertype"
+        )
+        MAP.put(
+            BUILDER_DEPENDENCIES_NOT_PROVIDED,
+            "Builder does not provide dependency for type {0}",
+            RENDER_TYPE
+        )
+        MAP.put(
+            BUILDER_MODULE_NOT_PROVIDED,
+            "Builder does not provide module instance {0}",
             RENDER_TYPE
         )
         MAP.put(

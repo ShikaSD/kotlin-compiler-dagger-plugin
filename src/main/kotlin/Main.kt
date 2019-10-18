@@ -78,8 +78,8 @@ class Injected2 {
     lateinit var lambdaString: () -> String
 //    @set:Inject
 //    var test1: Int? = null
-//    @Inject
-//    lateinit var main: Main
+    @Inject
+    lateinit var main: Main
     @Inject
     lateinit var lambdaInt: () -> Int
     @Inject

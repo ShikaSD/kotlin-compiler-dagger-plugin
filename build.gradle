@@ -16,7 +16,7 @@ plugins {
 apply plugin: 'me.shika.dagger-compiler-plugin'
 
 group 'me.shika.di'
-version '0.0.1-preview'
+version '0.0.2-SNAPSHOT'
 
 System.setProperty("kotlin.compiler.execution.strategy", "in-process") // For debugging
 

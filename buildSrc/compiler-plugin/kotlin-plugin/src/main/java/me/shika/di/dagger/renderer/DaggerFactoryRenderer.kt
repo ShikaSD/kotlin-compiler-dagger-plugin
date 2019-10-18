@@ -35,7 +35,7 @@ class DaggerFactoryRenderer(private val componentBuilder: TypeSpec.Builder, priv
         providerType: TypeName
     ): PropertySpec {
         val parent = signature?.containingDeclaration as? ClassDescriptor
-        val parentType = parent?.type() ?: graphNode.value.key.type.typeName()
+        val parentType = parent?.typeName() ?: graphNode.value.key.type.typeName()
         val name = graphNode.bindingName(parentType)
 
         val factoryType = componentName.nestedClass("${name}_Factory")
@@ -59,7 +59,7 @@ class DaggerFactoryRenderer(private val componentBuilder: TypeSpec.Builder, priv
         )
 
         // Factory property in component (cached if scoped)
-        val property = PropertySpec.builder(factoryMemberName, providerType)
+        val property = PropertySpec.builder(factoryMemberName, providerType, KModifier.PRIVATE)
             .factoryProperty(factoryType, depsFactories, parentType, graphNode.value.scopes.isNotEmpty())
             .build()
 
@@ -107,9 +107,6 @@ class DaggerFactoryRenderer(private val componentBuilder: TypeSpec.Builder, priv
     ) = apply {
         val params = depsFactories.map { it.name }.toMutableList()
         componentBuilder.propertySpecs.find { it.type == parentType }?.let { params += it.name }
-        if (parentType?.string() == componentName.string().removePrefix("Dagger")) { // hack
-            params += "this"
-        }
 
         val doubleCheckName = MemberName(
             ClassName("dagger.internal", "DoubleCheck"),
@@ -154,17 +151,34 @@ class DaggerFactoryRenderer(private val componentBuilder: TypeSpec.Builder, priv
             .build()
     }
 
-    private fun ClassDescriptor.type() = if (isCompanionObject) {
-        (containingDeclaration as ClassDescriptor).defaultType.typeName()
-    } else {
-        defaultType.typeName()
-    }
-
     private fun GraphNode.bindingName(parentType: TypeName?) = when (value.bindingType) {
         is Binding.Variation.StaticFunction,
         is Binding.Variation.InstanceFunction -> "${parentType?.name()}_${value.bindingType.source.name.asString().capitalize()}"
         is Binding.Variation.Constructor -> "${value.bindingType.source.constructedClass.name}"
         is Binding.Variation.BoundInstance -> "${value.bindingType.source.type.typeName()?.name()}"
-        is Binding.Variation.Component -> "component_${value.bindingType.source.type()?.name()}"
+        is Binding.Variation.Component -> "component_${value.bindingType.source.typeName()?.name()}"
     }
+}
+
+internal fun classWithFactories(
+    factories: List<PropertySpec>,
+    type: ClassName,
+    superInterface: TypeName
+): TypeSpec.Builder {
+    val properties = factories.map {
+        PropertySpec.builder(it.name, it.type, *it.modifiers.toTypedArray())
+            .initializer(it.name)
+            .build()
+    }
+
+    // Inner static class to generate binding
+    return TypeSpec.classBuilder(type)
+        .addModifiers(KModifier.PRIVATE)
+        .addSuperinterface(superInterface)
+        .addProperties(properties)
+        .primaryConstructor(
+            FunSpec.constructorBuilder()
+                .addParameters(properties.map { it.toParameter() })
+                .build()
+        )
 }

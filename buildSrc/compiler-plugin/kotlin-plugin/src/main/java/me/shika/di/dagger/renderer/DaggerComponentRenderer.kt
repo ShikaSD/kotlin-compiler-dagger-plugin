@@ -1,7 +1,6 @@
 package me.shika.di.dagger.renderer
 
 import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.Dynamic
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
@@ -9,7 +8,6 @@ import com.squareup.kotlinpoet.KModifier.INTERNAL
 import com.squareup.kotlinpoet.KModifier.OVERRIDE
 import com.squareup.kotlinpoet.KModifier.PRIVATE
 import com.squareup.kotlinpoet.LambdaTypeName
-import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeName
@@ -17,11 +15,10 @@ import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.WildcardTypeName
 import me.shika.di.dagger.resolver.DaggerComponentDescriptor
-import me.shika.di.dagger.resolver.classDescriptor
 import me.shika.di.dagger.resolver.creator.DaggerFactoryDescriptor
+import me.shika.di.model.Binding
 import me.shika.di.model.Endpoint
 import me.shika.di.model.ResolveResult
-import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
@@ -30,12 +27,10 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.parentOrNull
 import org.jetbrains.kotlin.renderer.render
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.types.KotlinType
 import java.io.File
 
 class DaggerComponentRenderer(
-    private val componentDescriptor: DaggerComponentDescriptor,
-    private val messageCollector: MessageCollector
+    private val componentDescriptor: DaggerComponentDescriptor
 ) {
     private val definition = componentDescriptor.definition
     private val componentClassName = ClassName(
@@ -73,59 +68,20 @@ class DaggerComponentRenderer(
     }
 
     private fun TypeSpec.Builder.createFactory() = apply {
-        val method = (componentDescriptor.creatorDescriptor as DaggerFactoryDescriptor).method!!
-        val factoryName = (method.containingDeclaration as ClassDescriptor).className()
-        addType(
-            TypeSpec.classBuilder("Factory")
-                .apply {
-                    addSuperinterface(factoryName)
-                    addModifiers(PRIVATE)
-                    addFunction(
-                        FunSpec.builder(method.name.asString())
-                            .addModifiers(OVERRIDE)
-                            .apply {
-                                method.valueParameters.forEach {
-                                    addParameter(
-                                        ParameterSpec.builder(it.name.asString(), it.type.typeName()!!)
-                                            .build()
-                                    )
-                                }
-                            }
-                            .returns(componentClassName)
-                            .addCode(
-                                CodeBlock.of(
-                                    "return ${componentDescriptor.nameString()}(${method.valueParameters.joinToString { it.name.asString() }})"
-                                )
-                            )
-                            .build()
-                    )
-                }
-                .build()
-        )
-
-        addType(
-            TypeSpec.companionObjectBuilder()
-                .addFunction(
-                    FunSpec.builder("factory")
-                        .returns(factoryName)
-                        .addCode(
-                            CodeBlock.of(
-                                "return Factory()"
-                            )
-                        )
-                        .build()
-                )
-                .build()
-        )
+        val method = (componentDescriptor.creatorDescriptor as? DaggerFactoryDescriptor)?.method ?: return@apply
+        me.shika.di.dagger.renderer.creator.DaggerFactoryRenderer(componentClassName, this)
+            .render(componentDescriptor.creatorDescriptor as DaggerFactoryDescriptor)
     }
 
     private fun TypeSpec.Builder.addDependencyInstances() = apply {
-        val properties = (componentDescriptor.creatorDescriptor as DaggerFactoryDescriptor).method!!.valueParameters.mapNotNull { it.type }.map {
-            val name = it.typeName()?.name()!!.decapitalize()
-            PropertySpec.builder(name, it.typeName()!!, PRIVATE)
-                .initializer(name)
-                .build()
-        }
+        val properties = componentDescriptor.creatorDescriptor?.instances
+            ?.map { (it.bindingType as Binding.Variation.BoundInstance).source.type }
+            ?.map {
+                val name = it.typeName()?.name()!!.decapitalize()
+                PropertySpec.builder(name, it.typeName()!!, PRIVATE)
+                    .initializer(name)
+                    .build()
+            } ?: emptyList()
         val params = properties.map { it.toParameter() }
 
         primaryConstructor(
@@ -168,21 +124,6 @@ private fun ClassDescriptor.className() =
         packageName = fqNameSafe.parentOrNull()?.takeIf { it != FqName.ROOT }?.asString().orEmpty(),
         simpleName = name.asString()
     )
-
-fun KotlinType.typeName(): TypeName? = classDescriptor()?.fqNameSafe?.let {
-    val types = arguments.map { it.type.typeName()!! }
-    val typed = ClassName(it.parent().asString(), it.shortName().asString())
-        .let {
-            if (types.isNotEmpty()) {
-                with(ParameterizedTypeName.Companion) {
-                    it.parameterizedBy(*types.toTypedArray())
-                }
-            } else {
-                it
-            }
-        }
-    typed.copy(nullable = this.isMarkedNullable)
-}
 
 fun TypeName.string(): String =
     when (this) {

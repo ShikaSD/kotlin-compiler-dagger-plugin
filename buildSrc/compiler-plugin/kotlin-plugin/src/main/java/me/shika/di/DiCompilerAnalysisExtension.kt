@@ -5,7 +5,6 @@ import me.shika.di.dagger.resolver.DaggerComponentDescriptor
 import me.shika.di.dagger.resolver.ResolverContext
 import me.shika.di.dagger.resolver.isComponent
 import org.jetbrains.kotlin.analyzer.AnalysisResult
-import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.container.ComponentProvider
 import org.jetbrains.kotlin.container.get
@@ -20,8 +19,7 @@ import org.jetbrains.kotlin.resolve.lazy.ResolveSession
 import java.io.File
 
 class DiCompilerAnalysisExtension(
-    private val sourcesDir: File,
-    private val reporter: MessageCollector
+    private val sourcesDir: File
 ) : AnalysisHandlerExtension {
     private var generatedFiles = false
 
@@ -56,7 +54,7 @@ class DiCompilerAnalysisExtension(
                             return@classRecursiveVisitor
                         }
 
-                        val renderer = DaggerComponentRenderer(component, reporter)
+                        val renderer = DaggerComponentRenderer(component)
                         renderer.render(sourcesDir)
                     }
                 }

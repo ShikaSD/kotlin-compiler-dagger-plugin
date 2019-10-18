@@ -40,6 +40,7 @@ internal fun DeclarationDescriptor.qualifiers(): List<AnnotationDescriptor> =
 internal val SCOPE_FQ_NAME = FqName("javax.inject.Scope")
 internal val QUALIFIER_FQ_NAME = FqName("javax.inject.Qualifier")
 internal val INJECT_FQ_NAME = FqName("javax.inject.Inject")
+internal val DAGGER_BINDS_INSTANCE_FQ_NAME = FqName("dagger.BindsInstance")
 
 internal fun ClassDescriptor.allDescriptors(kindFilter: DescriptorKindFilter) =
     unsubstitutedMemberScope.getDescriptorsFiltered(kindFilter) { true }
