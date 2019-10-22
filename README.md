@@ -18,10 +18,10 @@ Right now I have implemented the concept of:
 - inject dependencies into `@Inject` annotated fields
 - inject dependencies into `@Inject` annotated functions (one param only)
 - local scoping inside component using `@Scope` annotations
-- provide external dependencies using factory
+- provide external dependencies using `@Factory`
 - Support of `@BindsInstance` for components
-- `Qualifier`
-- `Builder`
+- Support for `@Qualifier`
+- external dependencies through `@Builder`
 
 TODO (in any order):
 - Default builder

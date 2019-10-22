@@ -65,7 +65,7 @@ class DaggerBuilderRenderer(
                     val param = it.valueParameters.first()
                     val qualifiers = it.annotations.filter { it.type.annotations.hasAnnotation(QUALIFIER_FQ_NAME) }
                     val property = paramToProperty[Key(param.type, qualifiers)]
-                    addCode("%N = ${param.name.asString()}\n", property)
+                    addCode("this.%N = ${param.name.asString()}\n", property)
 
                     if (!KotlinBuiltIns.isUnit(it.returnType!!)) {
                         addCode("return this")
