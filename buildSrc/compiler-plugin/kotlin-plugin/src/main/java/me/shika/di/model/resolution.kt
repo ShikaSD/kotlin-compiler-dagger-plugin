@@ -55,6 +55,7 @@ data class Binding(
 
         data class Constructor(override val source: ClassConstructorDescriptor): Variation()
         data class InstanceFunction(override val source: FunctionDescriptor): Variation()
+        data class InstanceProperty(override val source: PropertyDescriptor): Variation()
         data class StaticFunction(override val source: FunctionDescriptor): Variation()
         data class BoundInstance(override val source: ValueParameterDescriptor): Variation()
         data class Component(override val source: ClassDescriptor) : Variation()

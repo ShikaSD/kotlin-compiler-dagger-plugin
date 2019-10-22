@@ -84,16 +84,19 @@ class GraphBuilder(
 
     private fun Binding.resolveDependencies(): List<GraphNode> {
         // TODO move outside
-        val dependencyTypes = when (bindingType) {
+        val keys = when (bindingType) {
             is Variation.Constructor,
             is Variation.InstanceFunction,
             is Variation.StaticFunction -> {
-                (bindingType.source as FunctionDescriptor).valueParameters.mapNotNull { it.type }
+                (bindingType.source as FunctionDescriptor).valueParameters.map {
+                    Key(it.type, it.qualifiers())
+                }
             }
-            is Variation.BoundInstance -> emptyList()
+            is Variation.BoundInstance,
+            is Variation.InstanceProperty,
             is Variation.Component -> emptyList()
         }
-        return dependencyTypes.map { cachedNodeResolve(CallParam(it, bindingType.source, key.qualifiers)) }
+        return keys.map { cachedNodeResolve(CallParam(it.type, bindingType.source, it.qualifiers)) }
     }
 
     private fun KotlinType.injectableConstructor(): Binding? {

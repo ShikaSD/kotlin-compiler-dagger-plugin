@@ -39,7 +39,8 @@ interface Common {
 }
 
 interface Dependency {
-    fun file(): File
+    val file: File
+
     @TestQualifier
     fun qualifiedInt(): Int
 }
@@ -126,7 +127,7 @@ fun main(args: Array<String>) {
     val component = DaggerMain.factory()
         .build(
             object : Dependency {
-                override fun file() = File("")
+                override val file = File("")
                 override fun qualifiedInt(): Int = 999
             },
             TestModuleInstance(0),

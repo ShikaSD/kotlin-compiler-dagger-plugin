@@ -12,8 +12,8 @@ import me.shika.di.dagger.renderer.dsl.nestedClass
 import me.shika.di.dagger.renderer.dsl.overrideFunction
 import me.shika.di.dagger.renderer.parameterName
 import me.shika.di.dagger.renderer.typeName
-import me.shika.di.dagger.resolver.QUALIFIER_FQ_NAME
 import me.shika.di.dagger.resolver.creator.DaggerBuilderDescriptor
+import me.shika.di.dagger.resolver.qualifiers
 import me.shika.di.model.Key
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -63,7 +63,7 @@ class DaggerBuilderRenderer(
             setters.forEach {
                 overrideFunction(it) {
                     val param = it.valueParameters.first()
-                    val qualifiers = it.annotations.filter { it.type.annotations.hasAnnotation(QUALIFIER_FQ_NAME) }
+                    val qualifiers = it.qualifiers()
                     val property = paramToProperty[Key(param.type, qualifiers)]
                     addCode("this.%N = ${param.name.asString()}\n", property)
 

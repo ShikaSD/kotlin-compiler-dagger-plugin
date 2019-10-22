@@ -12,29 +12,29 @@ import com.squareup.kotlinpoet.TypeSpec
 import me.shika.di.model.Binding
 import me.shika.di.model.GraphNode
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.utils.addIfNotNull
 
 class DaggerFactoryRenderer(private val componentBuilder: TypeSpec.Builder, private val componentName: ClassName) {
     private val bindingToProp = mutableMapOf<Binding, PropertySpec>()
 
     fun getFactory(graphNode: GraphNode): PropertySpec? {
-        val signature = graphNode.value.bindingType.source as? FunctionDescriptor
+        val signature = graphNode.value.bindingType.source
         val returnType = graphNode.value.key.type.typeName() ?: return null // FIXME report
         val providerType = returnType.provider()
 
         return bindingToProp.getOrPut(graphNode.value) {
-            componentBuilder.addFactory(graphNode, signature, returnType, providerType)
+            componentBuilder.addFactory(graphNode, signature.containingDeclaration, returnType, providerType)
         }
     }
 
     private fun TypeSpec.Builder.addFactory(
         graphNode: GraphNode,
-        signature: FunctionDescriptor?,
+        containingDeclaration: DeclarationDescriptor?,
         returnType: TypeName,
         providerType: TypeName
     ): PropertySpec {
-        val parent = signature?.containingDeclaration as? ClassDescriptor
+        val parent = containingDeclaration as? ClassDescriptor
         val parentType = parent?.typeName() ?: graphNode.value.key.type.typeName()
         val name = graphNode.bindingName(parentType)
 
@@ -52,7 +52,7 @@ class DaggerFactoryRenderer(private val componentBuilder: TypeSpec.Builder, priv
                     FunSpec.builder("get")
                         .addModifiers(KModifier.OVERRIDE)
                         .returns(returnType)
-                        .addCode(graphNode.providerBody(instanceProperty, signature, depsFactories, parentType))
+                        .addCode(graphNode.providerBody(instanceProperty, depsFactories, parentType))
                         .build()
                 )
                 .build()
@@ -69,13 +69,12 @@ class DaggerFactoryRenderer(private val componentBuilder: TypeSpec.Builder, priv
 
     private fun GraphNode.providerBody(
         instanceProperty: PropertySpec?,
-        signature: FunctionDescriptor?,
         depsFactories: List<PropertySpec>,
         parentType: TypeName?
     ) = when (value.bindingType) {
             is Binding.Variation.StaticFunction -> {
                 CodeBlock.of(
-                    "return %T.${signature!!.name}(${depsFactories.joinToString(",") { "${it.name}.get()" }})",
+                    "return %T.${value.bindingType.source.name}(${depsFactories.joinToString(",") { "${it.name}.get()" }})",
                     parentType
                 )
             }
@@ -87,7 +86,13 @@ class DaggerFactoryRenderer(private val componentBuilder: TypeSpec.Builder, priv
             }
             is Binding.Variation.InstanceFunction -> {
                 CodeBlock.of(
-                    "return %N.${signature!!.name}(${depsFactories.joinToString(",") { "${it.name}.get()" }})",
+                    "return %N.${value.bindingType.source.name}(${depsFactories.joinToString(",") { "${it.name}.get()" }})",
+                    instanceProperty!!.name
+                )
+            }
+            is Binding.Variation.InstanceProperty -> {
+                CodeBlock.of(
+                    "return %N.${value.bindingType.source.name}",
                     instanceProperty!!.name
                 )
             }
@@ -141,7 +146,8 @@ class DaggerFactoryRenderer(private val componentBuilder: TypeSpec.Builder, priv
 
     private fun Binding.toProperty(): PropertySpec? {
         val type = when (bindingType) {
-            is Binding.Variation.InstanceFunction -> (bindingType.source.containingDeclaration as ClassDescriptor).defaultType
+            is Binding.Variation.InstanceFunction,
+            is Binding.Variation.InstanceProperty -> (bindingType.source.containingDeclaration as ClassDescriptor).defaultType
             is Binding.Variation.StaticFunction,
             is Binding.Variation.Constructor -> null
             else -> key.type
@@ -156,9 +162,10 @@ class DaggerFactoryRenderer(private val componentBuilder: TypeSpec.Builder, priv
 
     private fun GraphNode.bindingName(parentType: TypeName?) = when (value.bindingType) {
         is Binding.Variation.StaticFunction,
+        is Binding.Variation.InstanceProperty,
         is Binding.Variation.InstanceFunction -> "${parentType?.name()}_${value.bindingType.source.name.asString().capitalize()}"
-        is Binding.Variation.Constructor -> "${value.bindingType.source.constructedClass.name}"
-        is Binding.Variation.BoundInstance -> "${value.bindingType.source.type.typeName()?.name()}"
+        is Binding.Variation.Constructor -> value.bindingType.source.constructedClass.name
+        is Binding.Variation.BoundInstance -> value.bindingType.source.type.typeName()?.name()
         is Binding.Variation.Component -> "component_${value.bindingType.source.typeName()?.name()}"
     }
 }
