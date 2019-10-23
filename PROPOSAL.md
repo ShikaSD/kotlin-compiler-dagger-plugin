@@ -1,6 +1,6 @@
 This note explores compile-time "safe" DI container implementation relying on language itself, as opposed to annotation processing.
 
-The topics to explore for MVP:
+Topics to explore for MVP:
 1. Exposing dependencies from container
 2. Wiring(binding) dependency graph
 3. Injection (constructor and instance fields)
@@ -21,23 +21,36 @@ class FooComponent(
 // or
 
 interface FooComponent {
+    // scoped
     val bar: Bar
-    val otherDependency: Other.Dependency
+    // unscoped
+    fun otherDependency(): Other.Dependency
 }
 ```
 Component definition can be done using Kotlin DSL and compiler transformations. `TODO: provide more details`
 ```kotlin
 // Library
-fun <T> component(vararg dependencies: Binding<*>): T = TODO()
-fun module(definition: () -> Array<Binding<*>>): Array<Binding>
+fun <T> component(vararg dependencies: Any?): T = TODO()
+fun modules(vararg modules: Module, block: () -> Unit)
+interface Module // Marker
 
 // Client
+object Module : k.Module {
+    fun providesInt(): Int = 0L
+}
+
+class Module1() : k.Module {
+    fun bar(int: Int): Bar = Bar(int)
+}
+
 fun init() {
-    val fooComponent = component<FooComponent>(
-        bind<Bar>(barInstance),
-        bind<Bar1>(::bar1Provider),
-        *module(::fooBarModule)
-    )
+    val long = 0
+    modules(Module, Module1()) { // available as 'this'
+        val fooComponent = component<FooComponent>(
+            instance<Bar>(long),
+            instance<Bar1>(::bar1)
+        )
+    }
 
     val instance: Bar = fooComponent.bar
 }
