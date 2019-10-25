@@ -22,6 +22,7 @@ Right now I have implemented the concept of:
 - Support of `@BindsInstance` for components
 - Support for `@Qualifier`
 - external dependencies through `@Builder`
+- Type mapping using `@Binds`
 
 TODO (in any order):
 - Default builder

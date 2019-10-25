@@ -79,8 +79,8 @@ class ScopedInjected @Inject constructor(val lambda: () -> String) {
 class Injected2 {
     @Inject
     lateinit var lambdaString: () -> String
-//    @set:Inject
-//    var test1: Int? = null
+    @set:Inject
+    var test1: Int? = null
     @Inject
     lateinit var main: Main
     @Inject

@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.resolve.scopes.getDescriptorsFiltered
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.checker.KotlinTypeChecker
 import org.jetbrains.kotlin.types.typeUtil.isInt
+import org.jetbrains.kotlin.types.typeUtil.makeNotNullable
 
 internal fun KotlinType.classDescriptor() = constructor.declarationDescriptor as? ClassDescriptor
 
@@ -72,3 +73,4 @@ internal fun ClassDescriptor.isInstance() =
 
 internal infix fun KotlinType.applicableTo(type: KotlinType) =
     KotlinTypeChecker.DEFAULT.equalTypes(this, type)
+            || (type.isMarkedNullable && KotlinTypeChecker.DEFAULT.equalTypes(this, type.makeNotNullable()))

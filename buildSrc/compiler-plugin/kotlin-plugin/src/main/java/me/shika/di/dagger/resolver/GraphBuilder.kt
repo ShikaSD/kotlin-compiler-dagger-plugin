@@ -47,7 +47,7 @@ class GraphBuilder(
     private fun KotlinType.resolveNode(source: DeclarationDescriptor, qualifiers: List<AnnotationDescriptor>): GraphNode {
         val applicableBindings = bindings.filter {
             // TODO extract
-            this applicableTo it.key.type &&
+            it.key.type applicableTo this &&
                 qualifiers.map { it.fqName } == it.key.qualifiers.map { it.fqName }
         }
         val bindings = if (applicableBindings.isEmpty()) {
