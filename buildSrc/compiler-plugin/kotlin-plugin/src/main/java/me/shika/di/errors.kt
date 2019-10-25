@@ -38,6 +38,11 @@ val BUILDER_SETTER_WRONG_RETURN_TYPE = DiagnosticFactory0.create<PsiElement>(Sev
 val BUILDER_DEPENDENCIES_NOT_PROVIDED = DiagnosticFactory1.create<PsiElement, KotlinType>(Severity.ERROR)
 val BUILDER_MODULE_NOT_PROVIDED = DiagnosticFactory1.create<PsiElement, KotlinType>(Severity.ERROR)
 
+val BINDS_METHOD_NOT_ONE_PARAMETER = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+val BINDS_TYPE_IS_NOT_ASSIGNABLE = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+val BINDS_METHOD_NOT_ABSTRACT = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+val PROVIDES_METHOD_ABSTRACT = DiagnosticFactory0.create<PsiElement>(Severity.ERROR)
+
 val MORE_THAN_ONE_INJECT_CONSTRUCTOR = DiagnosticFactory1.create<PsiElement, ClassDescriptor>(Severity.ERROR)
 val NO_BINDINGS_FOUND = DiagnosticFactory1.create<PsiElement, KotlinType>(Severity.ERROR)
 val AMBIGUOUS_BINDINGS = DiagnosticFactory2.create<PsiElement, KotlinType, List<DeclarationDescriptor>>(Severity.ERROR)
@@ -140,6 +145,26 @@ object DaggerErrorMessages : DefaultErrorMessages.Extension {
             "Cannot use binding with different scope than component: binding - [{0}], component - [{1}]",
             AnnotationsRenderer(),
             AnnotationsRenderer()
+        )
+        MAP.put(
+            BINDS_METHOD_NOT_ONE_PARAMETER,
+            "Binds method must have only one parameter"
+        )
+        MAP.put(
+            BINDS_METHOD_NOT_ONE_PARAMETER,
+            "Binds method must have only one parameter"
+        )
+        MAP.put(
+            BINDS_METHOD_NOT_ONE_PARAMETER,
+            "Binds method parameter type must be assignable to return type"
+        )
+        MAP.put(
+            BINDS_METHOD_NOT_ABSTRACT,
+            "Binds method must be abstract"
+        )
+        MAP.put(
+            PROVIDES_METHOD_ABSTRACT,
+            "@Provides annotated method must not be abstract"
         )
     }
 }

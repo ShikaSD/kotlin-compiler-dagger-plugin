@@ -34,6 +34,11 @@ class DaggerFactoryRenderer(private val componentBuilder: TypeSpec.Builder, priv
         returnType: TypeName,
         providerType: TypeName
     ): PropertySpec {
+        val depsFactories = graphNode.dependencies.mapNotNull { getFactory(it) }
+        if (graphNode.value.bindingType is Binding.Variation.Equality) {
+            return depsFactories.first()
+        }
+
         val parent = containingDeclaration as? ClassDescriptor
         val parentType = parent?.typeName() ?: graphNode.value.key.type.typeName()
         val name = graphNode.bindingName(parentType)
@@ -42,7 +47,6 @@ class DaggerFactoryRenderer(private val componentBuilder: TypeSpec.Builder, priv
         val factoryMemberName = "${name}_Provider".decapitalize()
         val instanceProperty = graphNode.value.toProperty()
 
-        val depsFactories = graphNode.dependencies.mapNotNull { getFactory(it) }
         val factoryProperties = depsFactories.toMutableList()
             .apply { addIfNotNull(instanceProperty) }
 
@@ -102,6 +106,7 @@ class DaggerFactoryRenderer(private val componentBuilder: TypeSpec.Builder, priv
                     "return %N", instanceProperty!!.name
                 )
             }
+            is Binding.Variation.Equality -> TODO()
         }
 
     private fun PropertySpec.Builder.factoryProperty(
@@ -167,6 +172,7 @@ class DaggerFactoryRenderer(private val componentBuilder: TypeSpec.Builder, priv
         is Binding.Variation.Constructor -> value.bindingType.source.constructedClass.name
         is Binding.Variation.BoundInstance -> value.bindingType.source.type.typeName()?.name()
         is Binding.Variation.Component -> "component_${value.bindingType.source.typeName()?.name()}"
+        is Binding.Variation.Equality -> ""
     }
 }
 

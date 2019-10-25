@@ -87,6 +87,7 @@ class GraphBuilder(
         val keys = when (bindingType) {
             is Variation.Constructor,
             is Variation.InstanceFunction,
+            is Variation.Equality,
             is Variation.StaticFunction -> {
                 (bindingType.source as FunctionDescriptor).valueParameters.map {
                     Key(it.type, it.qualifiers())

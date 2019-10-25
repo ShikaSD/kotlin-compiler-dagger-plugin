@@ -1,3 +1,4 @@
+import dagger.Binds
 import dagger.BindsInstance
 import dagger.Component
 import dagger.Module
@@ -29,6 +30,7 @@ interface Main : Common {
     fun test3(): List<Long>
     @TestQualifier
     fun qualifiedInteger(): Int
+    fun testInterface(): TestInterface
 }
 
 interface Common {
@@ -108,12 +110,18 @@ annotation class TestQualifier
 @Module
 abstract class AbstractModule {
 
+    @Binds
+    abstract fun testInterface(testImpl: TestImpl): TestInterface
+
     @Module
     companion object {
         @TestScope
         @JvmStatic
         @Provides
         fun test12(): Long = 666L
+
+        @Provides
+        fun testImpl(): TestImpl = TestImpl()
     }
 }
 
@@ -122,6 +130,9 @@ class ZeroParameterModuleInstance() {
     @Provides
     fun longLambda(value: Long): () -> Long = { value }
 }
+
+interface TestInterface
+class TestImpl : TestInterface
 
 fun main(args: Array<String>) {
     val component = DaggerMain.factory()
