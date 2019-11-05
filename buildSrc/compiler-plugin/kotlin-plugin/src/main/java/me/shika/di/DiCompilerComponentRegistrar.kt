@@ -19,10 +19,17 @@ class DiCompilerComponentRegistrar: ComponentRegistrar {
         sourcesDir.deleteRecursively()
         sourcesDir.mkdirs()
 
+//        AnalysisHandlerExtension.registerExtension(
+//            project,
+//            DiCompilerAnalysisExtension(sourcesDir = sourcesDir)
+//        )
+
         AnalysisHandlerExtension.registerExtension(
             project,
-            DiCompilerAnalysisExtension(sourcesDir = sourcesDir)
+            TestMacroAnalysisExtension()
         )
+
+
     }
 
 }
