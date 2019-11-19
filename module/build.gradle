@@ -9,16 +9,14 @@ buildscript {
 
 plugins {
     id 'application'
-    id 'org.jetbrains.kotlin.jvm' version '1.3.60'
-//    id "org.jetbrains.kotlin.kapt" version "1.3.60"
+    id 'org.jetbrains.kotlin.jvm'
+//    id "org.jetbrains.kotlin.kapt"
 }
 
 apply plugin: 'me.shika.dagger-compiler-plugin'
 
 group 'me.shika.di'
 version '0.0.2-SNAPSHOT'
-
-System.setProperty("kotlin.compiler.execution.strategy", "in-process") // For debugging
 
 allprojects {
     repositories {
@@ -33,8 +31,6 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
     implementation "javax.inject:javax.inject:1"
     implementation 'com.google.dagger:dagger:2.22.1'
-    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.2'
-    implementation project(':module')
 //    kapt 'com.google.dagger:dagger-compiler:2.22.1'
 }
 
@@ -43,8 +39,4 @@ compileKotlin {
 }
 compileTestKotlin {
     kotlinOptions.jvmTarget = "1.8"
-}
-
-application {
-    mainClassName = 'MainKt'
 }

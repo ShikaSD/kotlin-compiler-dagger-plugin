@@ -1,12 +1,21 @@
-annotation class Macro(val template: String, val replacements: String)
 
-private const val template = ".*?(fun .*?\\(.*?\\) )\\{(.*?)\\}"
+interface DoThing {
+    fun doIt()
+}
 
-private const val replacement = """$1{ println("Before"); val m = System.currentTimeMillis(); $2; println(System.currentTimeMillis() - m);}"""
+class Instance : Extension<Int>, DoThing {
+    override fun doIt() {
 
-@Macro(template, replacement)
-fun test() { println("function body") }
+    }
+}
+
+fun thing(doThing: DoThing) {
+    doThing.doIt()
+}
 
 fun main() {
-    test()
+    Instance1()
+    0.doIt() // Should compile
+    0.kek() // Should compile
+    thing(0)
 }

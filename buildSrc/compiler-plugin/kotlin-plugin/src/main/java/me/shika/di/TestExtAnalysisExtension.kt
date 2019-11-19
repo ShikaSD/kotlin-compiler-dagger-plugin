@@ -8,16 +8,13 @@ import org.jetbrains.kotlin.container.ComponentProvider
 import org.jetbrains.kotlin.container.get
 import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi.namedFunctionRecursiveVisitor
+import org.jetbrains.kotlin.psi.classOrObjectVisitor
 import org.jetbrains.kotlin.resolve.BindingTrace
-import org.jetbrains.kotlin.resolve.constants.StringValue
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import org.jetbrains.kotlin.resolve.lazy.ResolveSession
 
-class TestMacroAnalysisExtension: AnalysisHandlerExtension {
+class TestExtAnalysisExtension: AnalysisHandlerExtension {
 
     var resolved = false
 
@@ -34,20 +31,12 @@ class TestMacroAnalysisExtension: AnalysisHandlerExtension {
 
         val resolveSession = componentProvider.get<ResolveSession>()
 
+        println("Start analysis")
         val updates = mutableListOf<Pair<KtFile, Pair<String, String>>>()
         files.forEach { file ->
             file.accept(
-                namedFunctionRecursiveVisitor {
-                    val descriptor = resolveSession.resolveToDescriptor(it)
-                    val macro = descriptor.annotations.findAnnotation(FqName("Macro")) ?: return@namedFunctionRecursiveVisitor
-                    val template = macro.allValueArguments[Name.identifier("template")] as StringValue
-                    val replacement = macro.allValueArguments[Name.identifier("replacements")] as StringValue
+                classOrObjectVisitor {
 
-                    val regex = template.value.toRegex()
-                    if (regex.containsMatchIn(it.text)) {
-//                        println(it.text.replace(regex, replacement.value))
-                        updates.add(file to (it.text to it.text.replace(regex, replacement.value)))
-                    }
                 }
             )
         }
@@ -76,5 +65,15 @@ class TestMacroAnalysisExtension: AnalysisHandlerExtension {
         }
 
         return AnalysisResult.RetryWithAdditionalRoots(bindingTrace.bindingContext, module, emptyList(), emptyList())
+    }
+
+    override fun analysisCompleted(
+        project: Project,
+        module: ModuleDescriptor,
+        bindingTrace: BindingTrace,
+        files: Collection<KtFile>
+    ): AnalysisResult? {
+        println("Analysis completed")
+        return super.analysisCompleted(project, module, bindingTrace, files)
     }
 }
