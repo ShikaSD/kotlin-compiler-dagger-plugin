@@ -1,6 +1,5 @@
 package me.shika.di
 
-import com.google.auto.service.AutoService
 import org.gradle.api.Project
 import org.gradle.api.tasks.compile.AbstractCompile
 import org.jetbrains.kotlin.gradle.dsl.KotlinCommonOptions
@@ -10,7 +9,7 @@ import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
 import java.io.File
 
-@AutoService(KotlinGradleSubplugin::class)
+// @AutoService(KotlinGradleSubplugin::class)
 class DiCompilerSubplugin: KotlinGradleSubplugin<AbstractCompile> {
     override fun apply(
         project: Project,
