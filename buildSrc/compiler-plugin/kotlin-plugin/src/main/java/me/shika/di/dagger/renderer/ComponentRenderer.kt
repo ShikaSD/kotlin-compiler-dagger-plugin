@@ -4,12 +4,15 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.KModifier.INTERNAL
 import com.squareup.kotlinpoet.KModifier.PRIVATE
-import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
-import me.shika.di.dagger.renderer.creator.DaggerBuilderRenderer
+import me.shika.di.dagger.renderer.creator.BuilderRenderer
+import me.shika.di.dagger.renderer.creator.FactoryRenderer
+import me.shika.di.dagger.renderer.dsl.markPrivate
 import me.shika.di.dagger.renderer.dsl.overrideFunction
 import me.shika.di.dagger.renderer.dsl.primaryConstructor
+import me.shika.di.dagger.renderer.dsl.property
+import me.shika.di.dagger.renderer.provider.getValue
 import me.shika.di.dagger.resolver.DaggerComponentDescriptor
 import me.shika.di.dagger.resolver.creator.DaggerBuilderDescriptor
 import me.shika.di.dagger.resolver.creator.DaggerFactoryDescriptor
@@ -60,12 +63,12 @@ class DaggerComponentRenderer(
 
     private fun TypeSpec.Builder.creator() = apply {
         when (val descriptor = componentDescriptor.creatorDescriptor) {
-            is DaggerFactoryDescriptor -> me.shika.di.dagger.renderer.creator.DaggerFactoryRenderer(
+            is DaggerFactoryDescriptor -> FactoryRenderer(
                 componentClassName,
                 componentDescriptor.parameters,
                 this
             ).render(descriptor)
-            is DaggerBuilderDescriptor -> DaggerBuilderRenderer(
+            is DaggerBuilderDescriptor -> BuilderRenderer(
                 componentClassName,
                 componentDescriptor.parameters,
                 this
@@ -76,12 +79,12 @@ class DaggerComponentRenderer(
     private fun TypeSpec.Builder.addDependencyInstances() {
         val properties = componentDescriptor.parameters.map {
             val name = it.parameterName()
-            PropertySpec.builder(name, it.type.typeName()!!, PRIVATE)
-                .initializer(name)
-                .build()
+            property(name, it.type.typeName()!!) {
+                markPrivate()
+                initializer(name)
+            }
         }
 
-        addProperties(properties)
         primaryConstructor {
             addModifiers(PRIVATE)
             addParameters(properties.map { it.toParameter() })
@@ -89,17 +92,18 @@ class DaggerComponentRenderer(
     }
 
     private fun TypeSpec.Builder.addBindings(results: List<ResolveResult>) = apply {
-        val factoryRenderer = DaggerFactoryRenderer(this, componentClassName)
+        val factoryRenderer =
+            RecursiveProviderRenderer(this, componentClassName)
         val membersInjectorRenderer =
-            DaggerMembersInjectorRenderer(this, componentClassName, factoryRenderer)
+            MembersInjectorRenderer(this, componentClassName, factoryRenderer)
         results.groupBy { it.endpoint.source }
             .map { (_, results) ->
                 val result = results.first()
                 when (val endpoint = result.endpoint) {
                     is Endpoint.Provided -> {
-                        val factory = factoryRenderer.getFactory(result.graph.single())
+                        val provider = factoryRenderer.getProvider(result.graph.single())
                         overrideFunction(endpoint.source) {
-                            addCode("return %N.get()", factory)
+                            addCode("return ${provider!!.getValue()}")
                         }
                     }
                     is Endpoint.Injected -> {

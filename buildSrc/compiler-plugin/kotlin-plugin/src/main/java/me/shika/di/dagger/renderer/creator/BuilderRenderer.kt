@@ -20,7 +20,7 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 
-class DaggerBuilderRenderer(
+class BuilderRenderer(
     private val componentClassName: ClassName,
     private val constructorParams: List<Key>,
     private val builder: TypeSpec.Builder

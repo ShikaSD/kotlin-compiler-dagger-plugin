@@ -2,20 +2,26 @@ package me.shika.di.dagger.renderer
 
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
-import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
+import me.shika.di.dagger.renderer.dsl.function
+import me.shika.di.dagger.renderer.dsl.markOverride
+import me.shika.di.dagger.renderer.dsl.markPrivate
+import me.shika.di.dagger.renderer.dsl.nestedClass
+import me.shika.di.dagger.renderer.provider.Provider
+import me.shika.di.dagger.renderer.provider.getValue
+import me.shika.di.dagger.renderer.provider.initializeDeps
 import me.shika.di.model.Endpoint
 import me.shika.di.model.Injectable
 import me.shika.di.model.ResolveResult
 
-class DaggerMembersInjectorRenderer(
+class MembersInjectorRenderer(
     private val componentBuilder: TypeSpec.Builder,
     private val componentName: ClassName,
-    private val factoryRenderer: DaggerFactoryRenderer
+    private val factoryRenderer: RecursiveProviderRenderer
 ) {
     fun getMembersInjector(injectedType: TypeName, results: List<ResolveResult>): PropertySpec? {
         val membersInjectorType = injectedType.injector()
@@ -25,41 +31,36 @@ class DaggerMembersInjectorRenderer(
     }
 
     private fun TypeSpec.Builder.addMembersInjector(injectedTypeName: TypeName, results: List<ResolveResult>): PropertySpec {
-        val injectorTypeName = componentName.nestedClass("${injectedTypeName.name()}_MembersInjector")
-        val injectedParamName = injectedTypeName.name().decapitalize()
+        val injectorName = "${injectedTypeName.asString()}_MembersInjector"
+        val injectorTypeName = componentName.nestedClass(injectorName)
+        val injectedParamName = injectedTypeName.asString().decapitalize()
 
         val injectedFactories = results.map { (it.endpoint as Endpoint.Injected).value }
-            .zip(results.map { it.graph.map { factoryRenderer.getFactory(it) } })
+            .zip(results.map { it.graph.map { factoryRenderer.getProvider(it) } })
 
         val factoryParams = injectedFactories.flatMap { it.second }.filterNotNull().distinct()
 
-        val type = classWithFactories(
-            factoryParams,
-            injectorTypeName,
-            injectedTypeName.injector()
-        )
-            .addFunction(
-                FunSpec.builder("injectMembers")
-                    .addModifiers(KModifier.OVERRIDE)
-                    .addParameter(injectedParamName, injectedTypeName)
-                    .apply {
-                        injectedFactories.generateInjects(injectedParamName).forEach {
-                            addCode(it)
-                        }
-                    }
-                    .build()
-            )
-            .build()
-        addType(type)
+        nestedClass(injectorName) {
+            markPrivate()
+            addSuperinterface(injectedTypeName.injector())
+            initializeDeps(factoryParams)
+            function("injectMembers") {
+                markOverride()
+                addParameter(injectedParamName, injectedTypeName)
+                injectedFactories.generateInjects(injectedParamName).forEach {
+                    addCode(it)
+                }
+            }
+        }
 
         val property = PropertySpec.builder(
-            injectorTypeName.name().decapitalize(),
+            injectorTypeName.asString().decapitalize(),
             injectedTypeName.injector(),
             KModifier.PRIVATE
         ).initializer(
             injectorTypeName.let {
                 val params = Array(factoryParams.size) { "%N" }.joinToString()
-                CodeBlock.of("%T($params)", it, *factoryParams.toTypedArray())
+                CodeBlock.of("%T($params)", it, *factoryParams.map { it.property }.toTypedArray())
             }
         )
             .build()
@@ -68,18 +69,18 @@ class DaggerMembersInjectorRenderer(
         return property
     }
 
-    private fun List<Pair<Injectable, List<PropertySpec?>>>.generateInjects(injectedParamName: String): List<CodeBlock> =
+    private fun List<Pair<Injectable, List<Provider?>>>.generateInjects(injectedParamName: String): List<CodeBlock> =
         map { (injectable, factories) ->
             when (injectable) {
                 is Injectable.Setter -> {
                     val setter = injectable.descriptor.name.asString()
-                    val params = factories.joinToString { "${it?.name}.get()" }
+                    val params = factories.filterNotNull().joinToString { it.getValue() }
                     CodeBlock.of("$injectedParamName.$setter($params)\n")
                 }
                 is Injectable.Property -> {
                     val parameter = injectable.descriptor.name.asString()
                     val factory = factories.single()
-                    val value = "${factory?.name}.get()"
+                    val value = factory?.getValue()
                     CodeBlock.of("$injectedParamName.$parameter = $value\n")
                 }
             }

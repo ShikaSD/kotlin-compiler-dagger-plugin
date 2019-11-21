@@ -52,8 +52,8 @@ internal fun ClassDescriptor.typeName(): TypeName? =
 
 internal fun TypeName.asString(): String =
     when (this) {
-        is ClassName -> simpleName
-        is ParameterizedTypeName -> rawType.simpleName + "_" + typeArguments.joinToString(separator = "_") { it.asString() }
+        is ClassName -> canonicalName.replace(".", "_")
+        is ParameterizedTypeName -> rawType.canonicalName.replace(".", "_") + "_" + typeArguments.joinToString(separator = "_") { it.asString() }
         is WildcardTypeName,
         is Dynamic,
         is LambdaTypeName,
