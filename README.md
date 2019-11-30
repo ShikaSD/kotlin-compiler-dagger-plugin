@@ -23,11 +23,11 @@ Right now I have implemented the concept of:
 - Support for `@Qualifier`
 - external dependencies through `@Builder`
 - Type mapping using `@Binds`
+- `Lazy` and `Provider` support
 
 TODO (in any order):
 - Default builder
 - `IntoSet` / `IntoMap`
-- `Lazy` and `Provider` support
 - Subcomponents
 - Proper scope support
 - ... the rest
