@@ -2,8 +2,9 @@ package me.shika.di.dagger.resolver
 
 import me.shika.di.AMBIGUOUS_BINDINGS
 import me.shika.di.BINDING_SCOPE_MISMATCH
-import me.shika.di.MORE_THAN_ONE_INJECT_CONSTRUCTOR
 import me.shika.di.NO_BINDINGS_FOUND
+import me.shika.di.dagger.resolver.bindings.InjectConstructorBindingResolver
+import me.shika.di.dagger.resolver.bindings.ProviderOrLazyBindingResolver
 import me.shika.di.model.Binding
 import me.shika.di.model.Binding.Variation
 import me.shika.di.model.Endpoint
@@ -20,11 +21,12 @@ class GraphBuilder(
     private val context: ResolverContext,
     private val componentScopes: List<AnnotationDescriptor>,
     private val endpoints: List<Endpoint>,
-    private val bindings: List<Binding>
+    resolvedBindings: List<Binding>
 ) {
     private val storage = LockBasedStorageManager.NO_LOCKS
     private val trace = context.trace
     private val componentScopeFqNames = componentScopes.map { it.fqName }
+    private val bindings = resolvedBindings.toMutableList()
 
     private val cachedNodeResolve = storage.createMemoizedFunction<CallParam, GraphNode> { (type, source, qualifiers) ->
         type.resolveNode(source, qualifiers)
@@ -34,12 +36,8 @@ class GraphBuilder(
 
     private fun Endpoint.resolveDependencies(): ResolveResult {
         val nodes = types.mapNotNull {
-            try {
-                cachedNodeResolve(CallParam(it!!, source, qualifiers))
-            } catch (e: Exception) {
-                // TODO: record stack + error
-                null
-            }
+            cachedNodeResolve(CallParam(it!!, source, qualifiers))
+
         }
         return ResolveResult(this, nodes)
     }
@@ -51,7 +49,9 @@ class GraphBuilder(
                 qualifiers.map { it.fqName } == it.key.qualifiers.map { it.fqName }
         }
         val bindings = if (applicableBindings.isEmpty()) {
-            listOfNotNull(injectableConstructor())
+            providerOrLazy(source, qualifiers).ifEmpty {
+                injectableConstructor()
+            }
         } else {
             applicableBindings
         }
@@ -84,7 +84,7 @@ class GraphBuilder(
 
     private fun Binding.resolveDependencies(): List<GraphNode> {
         // TODO move outside
-        val keys = when (bindingType) {
+        val keys = when (val binding = bindingType) {
             is Variation.Constructor,
             is Variation.InstanceFunction,
             is Variation.Equality,
@@ -93,6 +93,8 @@ class GraphBuilder(
                     Key(it.type, it.qualifiers())
                 }
             }
+            is Variation.Lazy -> listOf(Key(binding.innerType, key.qualifiers))
+            is Variation.Provider -> listOf(Key(binding.innerType, key.qualifiers))
             is Variation.BoundInstance,
             is Variation.InstanceProperty,
             is Variation.Component -> emptyList()
@@ -100,22 +102,15 @@ class GraphBuilder(
         return keys.map { cachedNodeResolve(CallParam(it.type, bindingType.source, it.qualifiers)) }
     }
 
-    private fun KotlinType.injectableConstructor(): Binding? {
-        val classDescriptor = classDescriptor() ?: return null
-        val injectableConstructors = classDescriptor.constructors.filter { it.annotations.hasAnnotation(INJECT_FQ_NAME) }
-        if (injectableConstructors.size > 1) {
-            classDescriptor.report(trace) {
-                MORE_THAN_ONE_INJECT_CONSTRUCTOR.on(it, classDescriptor)
-            }
+    private fun KotlinType.injectableConstructor(): List<Binding> =
+        InjectConstructorBindingResolver(this, context).invoke().also {
+            bindings += it
         }
-        return injectableConstructors.firstOrNull()?.let {
-            Binding(
-                Key(this, emptyList()),
-                classDescriptor.scopeAnnotations(),
-                Variation.Constructor(it)
-            )
+
+    private fun KotlinType.providerOrLazy(source: DeclarationDescriptor, qualifiers: List<AnnotationDescriptor>): List<Binding> =
+        ProviderOrLazyBindingResolver(this, source, qualifiers, context).invoke().also {
+            bindings += it
         }
-    }
 
     private data class CallParam(
         val type: KotlinType,

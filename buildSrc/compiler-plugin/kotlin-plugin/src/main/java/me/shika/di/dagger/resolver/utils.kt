@@ -8,6 +8,7 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality
+import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.diagnostics.Diagnostic
 import org.jetbrains.kotlin.diagnostics.reportFromPlugin
@@ -33,7 +34,7 @@ internal fun DeclarationDescriptor.scopeAnnotations(): List<AnnotationDescriptor
         it.annotationClass?.annotations?.hasAnnotation(SCOPE_FQ_NAME) == true
     }
 
-internal fun DeclarationDescriptor.qualifiers(): List<AnnotationDescriptor> =
+internal fun Annotated.qualifiers(): List<AnnotationDescriptor> =
     annotations.filter {
         it.annotationClass?.annotations?.hasAnnotation(QUALIFIER_FQ_NAME) == true
     }

@@ -11,9 +11,9 @@ import me.shika.di.model.Binding.Variation.Constructor
 
 class ConstructorRenderer(
     private val componentName: ClassName,
-    private val deps: List<Provider>
+    private val deps: List<ProviderSpec>
 ) : ProviderRenderer<Constructor> {
-    override fun TypeSpec.Builder.render(binding: Binding, variation: Constructor): Provider {
+    override fun TypeSpec.Builder.render(binding: Binding, variation: Constructor): ProviderSpec {
         val constructedClass = variation.source.constructedClass
         val returnType = constructedClass.defaultType.typeName()!!
         val renderedName = returnType.asString()
@@ -26,11 +26,11 @@ class ConstructorRenderer(
             deps,
             componentName.nestedClass(providerName),
             providerType,
-            isScoped = binding.scopes.isNotEmpty()
+            doubleCheck = binding.scopes.isNotEmpty()
         )
     }
 
-    private fun providerBody(className: TypeName, deps: List<Provider>): CodeBlock {
+    private fun providerBody(className: TypeName, deps: List<ProviderSpec>): CodeBlock {
         val params = deps.joinToString { it.getValue() }
         return CodeBlock.of("return %T($params)", className)
     }

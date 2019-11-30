@@ -5,7 +5,7 @@ import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
-import me.shika.di.dagger.renderer.provider.Provider.ProviderType
+import me.shika.di.dagger.renderer.provider.ProviderSpec.ProviderType
 import me.shika.di.dagger.renderer.typeName
 import me.shika.di.model.Binding
 import me.shika.di.model.Binding.Variation.InstanceProperty
@@ -13,7 +13,7 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 
 class InstancePropertyRenderer(private val componentName: ClassName) : ProviderRenderer<InstanceProperty> {
-    override fun TypeSpec.Builder.render(binding: Binding, variation: InstanceProperty): Provider {
+    override fun TypeSpec.Builder.render(binding: Binding, variation: InstanceProperty): ProviderSpec {
         val parent = variation.source.containingDeclaration as? ClassDescriptor
         val parentType = parent?.typeName()!!
         val renderedName = binding.renderedName(parentType)
@@ -21,7 +21,7 @@ class InstancePropertyRenderer(private val componentName: ClassName) : ProviderR
         val providerName = "${renderedName}_Provider"
 
         val instanceProperty = instanceProperty(parentType)
-        val parentDependency = listOf(Provider(instanceProperty, ProviderType.Value))
+        val parentDependency = listOf(ProviderSpec(instanceProperty, ProviderType.Value))
 
         val providerType = providerImpl(
             providerName,
@@ -35,7 +35,7 @@ class InstancePropertyRenderer(private val componentName: ClassName) : ProviderR
             parentDependency,
             componentName.nestedClass(providerName),
             providerType,
-            isScoped = binding.scopes.isNotEmpty()
+            doubleCheck = binding.scopes.isNotEmpty()
         )
     }
 

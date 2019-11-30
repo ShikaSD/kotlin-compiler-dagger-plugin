@@ -15,11 +15,11 @@ import me.shika.di.dagger.renderer.dsl.markPrivate
 import me.shika.di.dagger.renderer.dsl.nestedClass
 import me.shika.di.dagger.renderer.dsl.property
 import me.shika.di.dagger.renderer.letIf
-import me.shika.di.dagger.renderer.provider.Provider.ProviderType
+import me.shika.di.dagger.renderer.provider.ProviderSpec.ProviderType
 import me.shika.di.dagger.renderer.toParameter
 import me.shika.di.model.Binding
 
-internal fun TypeSpec.Builder.initializeDeps(factories: List<Provider>) {
+internal fun TypeSpec.Builder.initializeDeps(factories: List<ProviderSpec>) {
     val properties = factories.map {
         PropertySpec.builder(it.property.name, it.property.type, *it.property.modifiers.toTypedArray())
             .initializer(it.property.name)
@@ -35,7 +35,7 @@ internal fun TypeSpec.Builder.initializeDeps(factories: List<Provider>) {
     )
 }
 
-internal fun Provider.getValue() = when(type) {
+internal fun ProviderSpec.getValue() = when(type) {
     ProviderType.Provider -> "${property.name}.get()"
     ProviderType.Value -> property.name
 }
@@ -48,7 +48,7 @@ internal fun providerOf(typeName: TypeName) =
 internal fun TypeSpec.Builder.providerImpl(
     providerName: String,
     returnType: TypeName,
-    dependencies: List<Provider>,
+    dependencies: List<ProviderSpec>,
     providerBody: CodeBlock
 ): TypeName {
     val providerTypeName = providerOf(returnType)
@@ -68,18 +68,16 @@ internal fun TypeSpec.Builder.providerImpl(
     return providerTypeName
 }
 
-
-
 internal fun TypeSpec.Builder.providerProperty(
     propertyName: String,
-    deps: List<Provider>,
+    deps: List<ProviderSpec>,
     constructorType: TypeName,
     propertyType: TypeName,
-    isScoped: Boolean
-) = Provider(
+    doubleCheck: Boolean
+) = ProviderSpec(
     property = property(propertyName, propertyType) {
         markPrivate()
-        initializeProvider(constructorType, deps.map { it.property.name }, isScoped)
+        initializeProvider(constructorType, deps.map { it.property.name }, doubleCheck)
     },
     type = ProviderType.Provider
 )
@@ -87,17 +85,17 @@ internal fun TypeSpec.Builder.providerProperty(
 internal fun PropertySpec.Builder.initializeProvider(
     providerType: TypeName,
     params: List<String>,
-    isScoped: Boolean
+    doubleCheck: Boolean
 ): PropertySpec.Builder = apply {
     val args = hashMapOf(
-        "doubleCheck" to DOUBLE_CHECK_NAME,
+        "doubleCheck" to DOUBLE_CHECK_PROVIDER,
         "factoryType" to providerType
     )
 
     initializer(
         CodeBlock.builder()
             .addNamed(
-                "%factoryType:T(${params.joinToString()})".letIf(isScoped) {
+                "%factoryType:T(${params.joinToString()})".letIf(doubleCheck) {
                     "%doubleCheck:M($it)"
                 },
                 args
@@ -105,6 +103,9 @@ internal fun PropertySpec.Builder.initializeProvider(
             .build()
     )
 }
+
+internal fun doubleCheckLazy(template: String, vararg params: Any): CodeBlock =
+    CodeBlock.of("%M($template)", DOUBLE_CHECK_LAZY, *params)
 
 internal fun Binding.renderedName(parentType: TypeName?): String {
     val qualifiers = key.qualifiers.joinToString(
@@ -116,4 +117,6 @@ internal fun Binding.renderedName(parentType: TypeName?): String {
 }
 
 private val PROVIDER_CLASS_NAME = ClassName("javax.inject", "Provider")
-private val DOUBLE_CHECK_NAME = MemberName(ClassName("dagger.internal", "DoubleCheck"), "provider")
+private val DOUBLE_CHECK_NAME = ClassName("dagger.internal", "DoubleCheck")
+private val DOUBLE_CHECK_PROVIDER = MemberName(DOUBLE_CHECK_NAME, "provider")
+private val DOUBLE_CHECK_LAZY = MemberName(DOUBLE_CHECK_NAME, "lazy")

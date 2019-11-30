@@ -11,7 +11,7 @@ import me.shika.di.dagger.renderer.dsl.function
 import me.shika.di.dagger.renderer.dsl.markOverride
 import me.shika.di.dagger.renderer.dsl.markPrivate
 import me.shika.di.dagger.renderer.dsl.nestedClass
-import me.shika.di.dagger.renderer.provider.Provider
+import me.shika.di.dagger.renderer.provider.ProviderSpec
 import me.shika.di.dagger.renderer.provider.getValue
 import me.shika.di.dagger.renderer.provider.initializeDeps
 import me.shika.di.model.Endpoint
@@ -21,7 +21,7 @@ import me.shika.di.model.ResolveResult
 class MembersInjectorRenderer(
     private val componentBuilder: TypeSpec.Builder,
     private val componentName: ClassName,
-    private val factoryRenderer: RecursiveProviderRenderer
+    private val factoryRenderer: GraphRenderer
 ) {
     fun getMembersInjector(injectedType: TypeName, results: List<ResolveResult>): PropertySpec? {
         val membersInjectorType = injectedType.injector()
@@ -69,7 +69,7 @@ class MembersInjectorRenderer(
         return property
     }
 
-    private fun List<Pair<Injectable, List<Provider?>>>.generateInjects(injectedParamName: String): List<CodeBlock> =
+    private fun List<Pair<Injectable, List<ProviderSpec?>>>.generateInjects(injectedParamName: String): List<CodeBlock> =
         map { (injectable, factories) ->
             when (injectable) {
                 is Injectable.Setter -> {

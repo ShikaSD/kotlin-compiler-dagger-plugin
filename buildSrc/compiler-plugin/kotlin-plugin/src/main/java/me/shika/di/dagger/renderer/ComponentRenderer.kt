@@ -93,7 +93,7 @@ class DaggerComponentRenderer(
 
     private fun TypeSpec.Builder.addBindings(results: List<ResolveResult>) = apply {
         val factoryRenderer =
-            RecursiveProviderRenderer(this, componentClassName)
+            GraphRenderer(this, componentClassName)
         val membersInjectorRenderer =
             MembersInjectorRenderer(this, componentClassName, factoryRenderer)
         results.groupBy { it.endpoint.source }

@@ -1,4 +1,6 @@
 import dagger.Component
+import dagger.Lazy
+import javax.inject.Provider
 
 @TestScope
 @Component(modules = [TestModuleInstance::class])
@@ -10,4 +12,6 @@ interface BuilderMain {
     }
 
     fun integer(): Int
+    fun integerProvider(): Provider<Int>
+    fun integerLazy(): Lazy<Int>
 }
