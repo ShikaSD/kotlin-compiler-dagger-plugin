@@ -36,8 +36,12 @@ class GraphBuilder(
 
     private fun Endpoint.resolveDependencies(): ResolveResult {
         val nodes = types.mapNotNull {
-            cachedNodeResolve(CallParam(it!!, source, qualifiers))
-
+            try {
+                cachedNodeResolve(CallParam(it!!, source, qualifiers))
+            } catch (e: WrongBindingException) {
+                println(e)
+                null
+            }
         }
         return ResolveResult(this, nodes)
     }
@@ -60,14 +64,14 @@ class GraphBuilder(
             source.report(trace) {
                 NO_BINDINGS_FOUND.on(it, this)
             }
-            throw RuntimeException()
+            throw WrongBindingException()
         }
 
         if (bindings.size > 1) {
             source.report(trace) {
                 AMBIGUOUS_BINDINGS.on(it, this, bindings.map { it.bindingType.source })
             }
-            throw RuntimeException()
+            throw WrongBindingException()
         }
 
         val binding = bindings.first()
@@ -76,7 +80,7 @@ class GraphBuilder(
             source.report(trace) {
                 BINDING_SCOPE_MISMATCH.on(it, componentScopes, binding.scopes)
             }
-            throw RuntimeException()
+            throw WrongBindingException()
         }
 
         return GraphNode(binding, binding.resolveDependencies()) // TODO report recursive calls
@@ -117,6 +121,8 @@ class GraphBuilder(
         val descriptor: DeclarationDescriptor,
         val qualifiers: List<AnnotationDescriptor>
     )
+
+    private class WrongBindingException() : RuntimeException()
 
     private class UnwindStack(val items: MutableList<CallParam> = mutableListOf()): RuntimeException() {
         fun add(type: KotlinType, descriptor: DeclarationDescriptor, qualifiers: List<AnnotationDescriptor>) {

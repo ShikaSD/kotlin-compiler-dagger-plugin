@@ -12,7 +12,7 @@ import me.shika.di.model.Binding.Variation.Constructor
 class ConstructorRenderer(
     private val componentName: ClassName,
     private val deps: List<ProviderSpec>
-) : ProviderRenderer<Constructor> {
+) : BindingRenderer<Constructor> {
     override fun TypeSpec.Builder.render(binding: Binding, variation: Constructor): ProviderSpec {
         val constructedClass = variation.source.constructedClass
         val returnType = constructedClass.defaultType.typeName()!!

@@ -2,15 +2,15 @@ package me.shika.di.dagger.renderer
 
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.TypeSpec
+import me.shika.di.dagger.renderer.provider.BindingRenderer
 import me.shika.di.dagger.renderer.provider.BoundInstanceRenderer
-import me.shika.di.dagger.renderer.provider.ComponentProviderRenderer
+import me.shika.di.dagger.renderer.provider.ComponentBindingRenderer
 import me.shika.di.dagger.renderer.provider.ConstructorRenderer
-import me.shika.di.dagger.renderer.provider.EqualityProviderRenderer
+import me.shika.di.dagger.renderer.provider.EqualityBindingRenderer
 import me.shika.di.dagger.renderer.provider.InstanceFunctionRenderer
 import me.shika.di.dagger.renderer.provider.InstancePropertyRenderer
 import me.shika.di.dagger.renderer.provider.LazyBindingRenderer
 import me.shika.di.dagger.renderer.provider.ProviderBindingRenderer
-import me.shika.di.dagger.renderer.provider.ProviderRenderer
 import me.shika.di.dagger.renderer.provider.ProviderSpec
 import me.shika.di.dagger.renderer.provider.StaticFunctionRenderer
 import me.shika.di.model.Binding
@@ -41,14 +41,14 @@ class GraphRenderer(private val componentBuilder: TypeSpec.Builder, private val 
             is InstanceFunction -> render(InstanceFunctionRenderer(componentName, deps), graphNode)
             is InstanceProperty -> render(InstancePropertyRenderer(componentName), graphNode)
             is StaticFunction -> render(StaticFunctionRenderer(componentName, deps), graphNode)
-            is Equality -> render(EqualityProviderRenderer(deps), graphNode)
+            is Equality -> render(EqualityBindingRenderer(deps), graphNode)
             is BoundInstance -> render(BoundInstanceRenderer(), graphNode)
-            is Component -> render(ComponentProviderRenderer(componentName), graphNode)
+            is Component -> render(ComponentBindingRenderer(componentName), graphNode)
             is Provider -> render(ProviderBindingRenderer(componentName, deps), graphNode)
             is Lazy -> render(LazyBindingRenderer(componentName, deps), graphNode)
         }
     }
 
-    private fun <T : Binding.Variation> TypeSpec.Builder.render(renderer: ProviderRenderer<T>, graphNode: GraphNode) =
+    private fun <T : Binding.Variation> TypeSpec.Builder.render(renderer: BindingRenderer<T>, graphNode: GraphNode) =
         renderer.run { render(graphNode.value, graphNode.value.bindingType as T) }
 }

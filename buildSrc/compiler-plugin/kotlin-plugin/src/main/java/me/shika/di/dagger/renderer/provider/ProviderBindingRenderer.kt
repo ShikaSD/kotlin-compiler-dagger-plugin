@@ -11,7 +11,7 @@ import me.shika.di.model.Binding.Variation.Provider
 class ProviderBindingRenderer(
     private val componentName: ClassName,
     private val deps: List<ProviderSpec>
-) : ProviderRenderer<Provider> {
+) : BindingRenderer<Provider> {
     override fun TypeSpec.Builder.render(binding: Binding, variation: Provider): ProviderSpec {
         val parent = deps.first()
         return when (parent.type) {

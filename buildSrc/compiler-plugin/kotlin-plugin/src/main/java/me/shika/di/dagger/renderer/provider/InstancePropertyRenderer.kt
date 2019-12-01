@@ -12,7 +12,7 @@ import me.shika.di.model.Binding.Variation.InstanceProperty
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 
-class InstancePropertyRenderer(private val componentName: ClassName) : ProviderRenderer<InstanceProperty> {
+class InstancePropertyRenderer(private val componentName: ClassName) : BindingRenderer<InstanceProperty> {
     override fun TypeSpec.Builder.render(binding: Binding, variation: InstanceProperty): ProviderSpec {
         val parent = variation.source.containingDeclaration as? ClassDescriptor
         val parentType = parent?.typeName()!!

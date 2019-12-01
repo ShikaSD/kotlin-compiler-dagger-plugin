@@ -9,9 +9,9 @@ import me.shika.di.dagger.renderer.provider.ProviderSpec.ProviderType.Value
 import me.shika.di.model.Binding
 import me.shika.di.model.Binding.Variation.Component
 
-class ComponentProviderRenderer(
+class ComponentBindingRenderer(
     private val componentName: TypeName
-): ProviderRenderer<Component> {
+): BindingRenderer<Component> {
     override fun TypeSpec.Builder.render(binding: Binding, variation: Component): ProviderSpec =
         ProviderSpec(
             property = property("component_${componentName.asString()}", componentName) {

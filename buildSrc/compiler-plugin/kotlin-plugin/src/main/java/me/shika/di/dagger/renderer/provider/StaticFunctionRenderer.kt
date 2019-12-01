@@ -13,7 +13,7 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 class StaticFunctionRenderer(
     private val componentName: ClassName,
     private val deps: List<ProviderSpec>
-) : ProviderRenderer<StaticFunction> {
+) : BindingRenderer<StaticFunction> {
     override fun TypeSpec.Builder.render(binding: Binding, variation: StaticFunction): ProviderSpec {
         val parent = variation.source.containingDeclaration as? ClassDescriptor
         val parentType = parent?.typeName()

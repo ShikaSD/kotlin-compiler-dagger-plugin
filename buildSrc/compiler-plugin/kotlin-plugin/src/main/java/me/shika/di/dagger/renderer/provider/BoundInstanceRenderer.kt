@@ -6,7 +6,7 @@ import me.shika.di.dagger.renderer.typeName
 import me.shika.di.model.Binding
 import me.shika.di.model.Binding.Variation.BoundInstance
 
-class BoundInstanceRenderer() : ProviderRenderer<BoundInstance> {
+class BoundInstanceRenderer() : BindingRenderer<BoundInstance> {
     override fun TypeSpec.Builder.render(binding: Binding, variation: BoundInstance): ProviderSpec {
         val instanceType = variation.source.type
         val returnType = instanceType.typeName()!!

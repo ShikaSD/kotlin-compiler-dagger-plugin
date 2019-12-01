@@ -13,7 +13,7 @@ import me.shika.di.model.Binding.Variation.Lazy
 class LazyBindingRenderer(
     private val componentName: ClassName,
     private val deps: List<ProviderSpec>
-) : ProviderRenderer<Lazy> {
+) : BindingRenderer<Lazy> {
     override fun TypeSpec.Builder.render(binding: Binding, variation: Lazy): ProviderSpec {
         val parent = deps.first()
         val initCodeBlock = when (parent.type) {

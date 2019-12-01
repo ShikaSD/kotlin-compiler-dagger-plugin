@@ -32,6 +32,7 @@ internal fun KotlinType.classDescriptor() = constructor.declarationDescriptor as
 internal fun DeclarationDescriptor.scopeAnnotations(): List<AnnotationDescriptor> =
     annotations.filter {
         it.annotationClass?.annotations?.hasAnnotation(SCOPE_FQ_NAME) == true
+            && it.fqName != REUSABLE_FQ_NAME
     }
 
 internal fun Annotated.qualifiers(): List<AnnotationDescriptor> =
@@ -41,6 +42,7 @@ internal fun Annotated.qualifiers(): List<AnnotationDescriptor> =
 
 internal val SCOPE_FQ_NAME = FqName("javax.inject.Scope")
 internal val QUALIFIER_FQ_NAME = FqName("javax.inject.Qualifier")
+internal val REUSABLE_FQ_NAME = FqName("dagger.Reusable")
 internal val INJECT_FQ_NAME = FqName("javax.inject.Inject")
 internal val DAGGER_BINDS_INSTANCE_FQ_NAME = FqName("dagger.BindsInstance")
 

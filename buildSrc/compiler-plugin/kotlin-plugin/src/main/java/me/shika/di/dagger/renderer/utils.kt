@@ -50,20 +50,22 @@ internal fun ClassDescriptor.typeName(): TypeName? =
         defaultType.typeName()
     }
 
-internal fun TypeName.asString(): String =
+internal fun TypeName.asFqString(): String =
     when (this) {
         is ClassName -> canonicalName.replace(".", "_")
-        is ParameterizedTypeName -> rawType.canonicalName.replace(".", "_") + "_" + typeArguments.joinToString(separator = "_") { it.asString() }
+        is ParameterizedTypeName -> {
+            rawType.asFqString() + typeArguments.joinToString(separator = "_", prefix = "_") { it.asFqString() }
+        }
         is WildcardTypeName,
         is Dynamic,
         is LambdaTypeName,
         is TypeVariableName -> TODO()
     } + ("_nullable".takeIf { isNullable } ?: "")
 
-internal fun TypeName.asSimpleString(): String =
+internal fun TypeName.asString(): String =
     when (this) {
         is ClassName -> simpleName
-        is ParameterizedTypeName -> rawType.simpleName + "_" + typeArguments.joinToString(separator = "_") { it.asSimpleString() }
+        is ParameterizedTypeName -> rawType.simpleName + typeArguments.joinToString(separator = "_", prefix = "_") { it.asString() }
         is WildcardTypeName,
         is Dynamic,
         is LambdaTypeName,
@@ -71,10 +73,10 @@ internal fun TypeName.asSimpleString(): String =
     } + ("_nullable".takeIf { isNullable } ?: "")
 
 internal fun Key.parameterName(): String {
-    val type = type.typeName()?.asString()?.decapitalize()
+    val type = type.typeName()?.asFqString()?.decapitalize()
     val qualifiers = if (qualifiers.isNotEmpty()) {
         qualifiers.joinToString(separator = "_", prefix = "_") {
-            it.type.typeName()?.asString().orEmpty().decapitalize()
+            it.type.typeName()?.asFqString().orEmpty().decapitalize()
         }
     } else {
         ""

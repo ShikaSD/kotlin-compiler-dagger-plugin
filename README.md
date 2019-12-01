@@ -22,11 +22,13 @@ Right now I have implemented the concept of:
 - Support of `@BindsInstance` for components
 - Support for `@Qualifier`
 - external dependencies through `@Builder`
+- Default builder
 - Type mapping using `@Binds`
 - `Lazy` and `Provider` support
 
 TODO (in any order):
-- Default builder
+- Default module instantiation when class has an empty constructor
+- `Reusable` support
 - `IntoSet` / `IntoMap`
 - Subcomponents
 - Proper scope support

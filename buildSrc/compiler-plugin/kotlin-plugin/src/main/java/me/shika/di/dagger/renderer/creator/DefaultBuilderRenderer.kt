@@ -6,7 +6,7 @@ import com.squareup.kotlinpoet.KModifier.PRIVATE
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
-import me.shika.di.dagger.renderer.asSimpleString
+import me.shika.di.dagger.renderer.asString
 import me.shika.di.dagger.renderer.dsl.companionObject
 import me.shika.di.dagger.renderer.dsl.function
 import me.shika.di.dagger.renderer.dsl.nestedClass
@@ -51,7 +51,7 @@ class DefaultBuilderRenderer(
     }
 
     private fun TypeSpec.Builder.createMethod(param: PropertySpec) {
-        val name = param.type.asSimpleString().decapitalize()
+        val name = param.type.asString().decapitalize()
         function(name) {
             returns(builderClassName)
             addParameter(ParameterSpec.builder(name, param.type).build())

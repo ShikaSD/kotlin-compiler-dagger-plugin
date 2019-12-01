@@ -15,11 +15,11 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 class InstanceFunctionRenderer(
     private val componentName: ClassName,
     private val deps: List<ProviderSpec>
-) : ProviderRenderer<InstanceFunction> {
+) : BindingRenderer<InstanceFunction> {
     override fun TypeSpec.Builder.render(binding: Binding, variation: InstanceFunction): ProviderSpec {
         val parent = variation.source.containingDeclaration as? ClassDescriptor
         val parentType = parent?.typeName()!!
-        val renderedName = binding.renderedName(parentType)
+        val renderedName = binding.renderedName(parentType).capitalize()
         val returnType = variation.returnType()!!
         val providerName = "${renderedName}_Provider"
 

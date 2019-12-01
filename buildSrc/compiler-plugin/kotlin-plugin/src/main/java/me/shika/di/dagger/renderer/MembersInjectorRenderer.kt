@@ -31,9 +31,10 @@ class MembersInjectorRenderer(
     }
 
     private fun TypeSpec.Builder.addMembersInjector(injectedTypeName: TypeName, results: List<ResolveResult>): PropertySpec {
-        val injectorName = "${injectedTypeName.asString()}_MembersInjector"
+        val renderedName = injectedTypeName.asString().capitalize()
+        val injectorName = "${renderedName}_MembersInjector"
         val injectorTypeName = componentName.nestedClass(injectorName)
-        val injectedParamName = injectedTypeName.asString().decapitalize()
+        val injectedParamName = renderedName.decapitalize()
 
         val injectedFactories = results.map { (it.endpoint as Endpoint.Injected).value }
             .zip(results.map { it.graph.map { factoryRenderer.getProvider(it) } })
@@ -54,7 +55,7 @@ class MembersInjectorRenderer(
         }
 
         val property = PropertySpec.builder(
-            injectorTypeName.asString().decapitalize(),
+            injectorTypeName.asFqString().decapitalize(),
             injectedTypeName.injector(),
             KModifier.PRIVATE
         ).initializer(

@@ -4,7 +4,6 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.KModifier.INTERNAL
 import com.squareup.kotlinpoet.KModifier.PRIVATE
-import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
 import me.shika.di.dagger.renderer.creator.BuilderRenderer
 import me.shika.di.dagger.renderer.creator.DefaultBuilderRenderer
@@ -124,5 +123,3 @@ class DaggerComponentRenderer(
             }
     }
 }
-
-internal fun TypeName.name() = asString()
