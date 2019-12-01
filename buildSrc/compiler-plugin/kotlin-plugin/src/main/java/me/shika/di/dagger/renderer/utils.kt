@@ -60,6 +60,16 @@ internal fun TypeName.asString(): String =
         is TypeVariableName -> TODO()
     } + ("_nullable".takeIf { isNullable } ?: "")
 
+internal fun TypeName.asSimpleString(): String =
+    when (this) {
+        is ClassName -> simpleName
+        is ParameterizedTypeName -> rawType.simpleName + "_" + typeArguments.joinToString(separator = "_") { it.asSimpleString() }
+        is WildcardTypeName,
+        is Dynamic,
+        is LambdaTypeName,
+        is TypeVariableName -> TODO()
+    } + ("_nullable".takeIf { isNullable } ?: "")
+
 internal fun Key.parameterName(): String {
     val type = type.typeName()?.asString()?.decapitalize()
     val qualifiers = if (qualifiers.isNotEmpty()) {

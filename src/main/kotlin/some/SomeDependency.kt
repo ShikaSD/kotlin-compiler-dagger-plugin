@@ -1,0 +1,4 @@
+package some
+
+interface SomeDependency {
+}

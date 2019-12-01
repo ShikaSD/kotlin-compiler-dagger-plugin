@@ -8,9 +8,10 @@ import me.shika.di.COMPONENT_WITH_MULTIPLE_FACTORIES
 import me.shika.di.dagger.resolver.bindings.CreatorInstanceBindingResolver
 import me.shika.di.dagger.resolver.bindings.DependencyBindingResolver
 import me.shika.di.dagger.resolver.bindings.ModuleBindingResolver
+import me.shika.di.dagger.resolver.creator.BuilderDescriptor
 import me.shika.di.dagger.resolver.creator.CreatorDescriptor
-import me.shika.di.dagger.resolver.creator.DaggerBuilderDescriptor
-import me.shika.di.dagger.resolver.creator.DaggerFactoryDescriptor
+import me.shika.di.dagger.resolver.creator.DefaultBuilderDescriptor
+import me.shika.di.dagger.resolver.creator.FactoryDescriptor
 import me.shika.di.dagger.resolver.endpoints.InjectionEndpointResolver
 import me.shika.di.dagger.resolver.endpoints.ProvisionEndpointResolver
 import me.shika.di.model.Binding
@@ -49,7 +50,7 @@ class DaggerComponentDescriptor(
         } ?: return
         val scopes = definition.scopeAnnotations()
 
-        creatorDescriptor = definition.findCreator(componentAnnotation)
+        creatorDescriptor = definition.findCreator(componentAnnotation) ?: DefaultBuilderDescriptor()
 
         val bindingResolvers = listOfNotNull(
             ModuleBindingResolver(componentAnnotation, definition, context),
@@ -107,8 +108,8 @@ class DaggerComponentDescriptor(
             report(context.trace) { COMPONENT_WITH_FACTORY_AND_BUILDER.on(it, factories, builders) }
         }
 
-        return factories.firstOrNull()?.let { DaggerFactoryDescriptor(definition, it, componentAnnotation, context) }
-            ?: builders.firstOrNull()?.let { DaggerBuilderDescriptor(definition, it, componentAnnotation, context) }
+        return factories.firstOrNull()?.let { FactoryDescriptor(definition, it, componentAnnotation, context) }
+            ?: builders.firstOrNull()?.let { BuilderDescriptor(definition, it, componentAnnotation, context) }
     }
 
     private fun componentBinding() = Binding(

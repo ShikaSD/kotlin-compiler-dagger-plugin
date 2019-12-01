@@ -18,7 +18,7 @@ import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.types.typeUtil.isSubtypeOf
 
-class DaggerBuilderDescriptor(
+class BuilderDescriptor(
     private val component: ClassDescriptor,
     private val definition: ClassDescriptor,
     private val componentAnnotation: ComponentAnnotationDescriptor,

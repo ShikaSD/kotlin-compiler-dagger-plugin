@@ -20,7 +20,7 @@ import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter.Companion.FUNCTI
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.typeUtil.isSubtypeOf
 
-class DaggerFactoryDescriptor(
+class FactoryDescriptor(
     private val component: ClassDescriptor,
     private val definition: ClassDescriptor,
     private val componentAnnotation: ComponentAnnotationDescriptor,

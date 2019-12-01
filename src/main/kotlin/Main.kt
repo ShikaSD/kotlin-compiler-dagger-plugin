@@ -121,6 +121,7 @@ abstract class AbstractModule {
         fun test12(): Long = 666L
 
         @Provides
+        @JvmStatic
         fun testImpl(): TestImpl = TestImpl()
     }
 }

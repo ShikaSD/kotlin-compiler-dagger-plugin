@@ -7,6 +7,7 @@ import com.squareup.kotlinpoet.KModifier.PRIVATE
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
 import me.shika.di.dagger.renderer.creator.BuilderRenderer
+import me.shika.di.dagger.renderer.creator.DefaultBuilderRenderer
 import me.shika.di.dagger.renderer.creator.FactoryRenderer
 import me.shika.di.dagger.renderer.dsl.markPrivate
 import me.shika.di.dagger.renderer.dsl.overrideFunction
@@ -14,8 +15,9 @@ import me.shika.di.dagger.renderer.dsl.primaryConstructor
 import me.shika.di.dagger.renderer.dsl.property
 import me.shika.di.dagger.renderer.provider.getValue
 import me.shika.di.dagger.resolver.DaggerComponentDescriptor
-import me.shika.di.dagger.resolver.creator.DaggerBuilderDescriptor
-import me.shika.di.dagger.resolver.creator.DaggerFactoryDescriptor
+import me.shika.di.dagger.resolver.creator.BuilderDescriptor
+import me.shika.di.dagger.resolver.creator.DefaultBuilderDescriptor
+import me.shika.di.dagger.resolver.creator.FactoryDescriptor
 import me.shika.di.model.Endpoint
 import me.shika.di.model.ResolveResult
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -63,16 +65,21 @@ class DaggerComponentRenderer(
 
     private fun TypeSpec.Builder.creator() = apply {
         when (val descriptor = componentDescriptor.creatorDescriptor) {
-            is DaggerFactoryDescriptor -> FactoryRenderer(
+            is FactoryDescriptor -> FactoryRenderer(
                 componentClassName,
                 componentDescriptor.parameters,
                 this
             ).render(descriptor)
-            is DaggerBuilderDescriptor -> BuilderRenderer(
+            is BuilderDescriptor -> BuilderRenderer(
                 componentClassName,
                 componentDescriptor.parameters,
                 this
             ).render(descriptor)
+            is DefaultBuilderDescriptor -> DefaultBuilderRenderer(
+                componentClassName,
+                componentDescriptor.parameters,
+                this
+            ).render()
         }
     }
 

@@ -9,7 +9,7 @@ import me.shika.di.dagger.renderer.dsl.markPrivate
 import me.shika.di.dagger.renderer.dsl.nestedClass
 import me.shika.di.dagger.renderer.dsl.overrideFunction
 import me.shika.di.dagger.renderer.typeName
-import me.shika.di.dagger.resolver.creator.DaggerFactoryDescriptor
+import me.shika.di.dagger.resolver.creator.FactoryDescriptor
 import me.shika.di.model.Key
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -20,7 +20,7 @@ class FactoryRenderer(
     private val constructorParams: List<Key>,
     private val builder: TypeSpec.Builder
 ) {
-    fun render(factoryDescriptor: DaggerFactoryDescriptor) {
+    fun render(factoryDescriptor: FactoryDescriptor) {
         val method = factoryDescriptor.method ?: return
         val factoryClass = factoryDescriptor.method?.containingDeclaration as? ClassDescriptor ?: return
         val factoryInterfaceName = factoryClass.typeName() ?: return

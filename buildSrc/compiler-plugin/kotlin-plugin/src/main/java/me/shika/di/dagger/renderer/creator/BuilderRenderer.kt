@@ -12,7 +12,7 @@ import me.shika.di.dagger.renderer.dsl.nestedClass
 import me.shika.di.dagger.renderer.dsl.overrideFunction
 import me.shika.di.dagger.renderer.parameterName
 import me.shika.di.dagger.renderer.typeName
-import me.shika.di.dagger.resolver.creator.DaggerBuilderDescriptor
+import me.shika.di.dagger.resolver.creator.BuilderDescriptor
 import me.shika.di.dagger.resolver.qualifiers
 import me.shika.di.model.Key
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
@@ -25,7 +25,7 @@ class BuilderRenderer(
     private val constructorParams: List<Key>,
     private val builder: TypeSpec.Builder
 ) {
-    fun render(builderDescriptor: DaggerBuilderDescriptor) {
+    fun render(builderDescriptor: BuilderDescriptor) {
         val builderClass = builderDescriptor.buildMethod?.containingDeclaration as? ClassDescriptor ?: return
         val builderClassName = builderClass.typeName()!!
         builder.apply {
