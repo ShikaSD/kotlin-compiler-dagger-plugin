@@ -56,7 +56,7 @@ internal fun TypeSpec.Builder.providerImpl(
     nestedClass(providerName) {
         markPrivate()
         addSuperinterface(providerTypeName)
-        initializeDeps(dependencies)
+        initializeDeps(dependencies.distinct())
 
         function("get") {
             markOverride()
@@ -77,7 +77,7 @@ internal fun TypeSpec.Builder.providerProperty(
 ) = ProviderSpec(
     property = property(propertyName, propertyType) {
         markPrivate()
-        initializeProvider(constructorType, deps.map { it.property.name }, doubleCheck)
+        initializeProvider(constructorType, deps.distinct().map { it.property.name }, doubleCheck)
     },
     type = ProviderType.Provider
 )
@@ -104,9 +104,6 @@ internal fun PropertySpec.Builder.initializeProvider(
     )
 }
 
-internal fun doubleCheckLazy(template: String, vararg params: Any): CodeBlock =
-    CodeBlock.of("%M($template)", DOUBLE_CHECK_LAZY, *params)
-
 internal fun Binding.renderedName(parentType: TypeName?): String {
     val qualifiers = key.qualifiers.joinToString(
         separator = "_",
@@ -117,6 +114,5 @@ internal fun Binding.renderedName(parentType: TypeName?): String {
 }
 
 private val PROVIDER_CLASS_NAME = ClassName("javax.inject", "Provider")
-private val DOUBLE_CHECK_NAME = ClassName("dagger.internal", "DoubleCheck")
+internal val DOUBLE_CHECK_NAME = ClassName("dagger.internal", "DoubleCheck")
 private val DOUBLE_CHECK_PROVIDER = MemberName(DOUBLE_CHECK_NAME, "provider")
-private val DOUBLE_CHECK_LAZY = MemberName(DOUBLE_CHECK_NAME, "lazy")

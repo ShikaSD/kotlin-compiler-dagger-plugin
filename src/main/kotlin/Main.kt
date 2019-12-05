@@ -10,7 +10,7 @@ import javax.inject.Scope
 
 @TestScope
 @Component(
-    modules = [TestModuleInstance::class, TestModule::class, AbstractModule::class],
+    modules = [TestModuleInstance::class, AbstractModule::class],
     dependencies = [Dependency::class]
 )
 interface Main : Common {
@@ -31,6 +31,8 @@ interface Main : Common {
     @TestQualifier
     fun qualifiedInteger(): Int
     fun testInterface(): TestInterface
+    fun foo(): Foo
+    fun bar(): Bar
 }
 
 interface Common {
@@ -63,6 +65,9 @@ object TestModule {
     fun lambdaInt(int: Int): () -> Int = { int }
 }
 
+class Foo @Inject constructor(val bar: Bar)
+class Bar @Inject constructor(val foo: Foo)
+
 class Injected @Inject constructor(val lambda: () -> String) {
     init {
         println("Created injected")
@@ -91,7 +96,7 @@ class Injected2 {
     }
 }
 
-@Module
+@Module(includes = [TestModule::class])
 class TestModuleInstance(val int: Int) {
     @TestScope
     @Provides

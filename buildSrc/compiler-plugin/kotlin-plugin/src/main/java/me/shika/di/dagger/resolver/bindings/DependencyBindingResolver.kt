@@ -25,7 +25,12 @@ class DependencyBindingResolver(
             .flatMap { resolveBindings(it) }
 
     private fun resolveBindings(dependency: ClassDescriptor): List<Binding> =
-        resolveDependencyFunctions(dependency) + resolveDependencyProperties(dependency)
+        resolveDependencyFunctions(dependency) + resolveDependencyProperties(dependency) +
+            Binding(
+                Key(dependency.defaultType, dependency.qualifiers()),
+                dependency.scopeAnnotations(),
+                Binding.Variation.BoundInstance(dependency)
+            )
 
     private fun resolveDependencyFunctions(dependency: ClassDescriptor): List<Binding> =
         dependency.allDescriptors(DescriptorKindFilter.FUNCTIONS)

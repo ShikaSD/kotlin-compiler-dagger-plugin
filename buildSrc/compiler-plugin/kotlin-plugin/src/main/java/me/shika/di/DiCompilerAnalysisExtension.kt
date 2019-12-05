@@ -7,15 +7,13 @@ import me.shika.di.dagger.resolver.isComponent
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.container.ComponentProvider
-import org.jetbrains.kotlin.container.get
 import org.jetbrains.kotlin.context.ProjectContext
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.classRecursiveVisitor
+import org.jetbrains.kotlin.resolve.BindingContext.CLASS
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
-import org.jetbrains.kotlin.resolve.lazy.ResolveSession
 import java.io.File
 
 class DiCompilerAnalysisExtension(
@@ -30,19 +28,26 @@ class DiCompilerAnalysisExtension(
         files: Collection<KtFile>,
         bindingTrace: BindingTrace,
         componentProvider: ComponentProvider
+    ): AnalysisResult? = null
+
+    override fun analysisCompleted(
+        project: Project,
+        module: ModuleDescriptor,
+        bindingTrace: BindingTrace,
+        files: Collection<KtFile>
     ): AnalysisResult? {
         if (generatedFiles) return null
 
-        val resolveSession = componentProvider.get<ResolveSession>()
-        val resolverContext = ResolverContext(module, bindingTrace, resolveSession)
+        val initialDiagnosticCount = bindingTrace.bindingContext.diagnostics.all().size
+        val resolverContext = ResolverContext(module, bindingTrace)
 
         files.forEach { file ->
             val diagnosticCount = bindingTrace.bindingContext.diagnostics.all().size
 
             file.accept(
                 classRecursiveVisitor { ktClass ->
-                    val classDescriptor = resolveSession.resolveToDescriptor(ktClass) as ClassDescriptor
-                    if (classDescriptor.isComponent()) {
+                    val classDescriptor = bindingTrace[CLASS, ktClass]
+                    if (classDescriptor?.isComponent() == true) {
                         val component = DaggerComponentDescriptor(
                             classDescriptor,
                             file,
@@ -62,7 +67,7 @@ class DiCompilerAnalysisExtension(
         }
 
         generatedFiles = true
-        return if (bindingTrace.bindingContext.diagnostics.isEmpty()) {
+        return if (bindingTrace.bindingContext.diagnostics.all().size == initialDiagnosticCount) {
             AnalysisResult.RetryWithAdditionalRoots(
                 bindingContext = bindingTrace.bindingContext,
                 moduleDescriptor = module,
@@ -72,12 +77,6 @@ class DiCompilerAnalysisExtension(
         } else {
             AnalysisResult.compilationError(bindingTrace.bindingContext)
         }
-    }
 
-    override fun analysisCompleted(
-        project: Project,
-        module: ModuleDescriptor,
-        bindingTrace: BindingTrace,
-        files: Collection<KtFile>
-    ): AnalysisResult? = null
+    }
 }

@@ -5,7 +5,6 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
-import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.types.KotlinType
 
@@ -57,10 +56,12 @@ data class Binding(
         data class InstanceFunction(override val source: FunctionDescriptor): Variation()
         data class InstanceProperty(override val source: PropertyDescriptor): Variation()
         data class StaticFunction(override val source: FunctionDescriptor): Variation()
-        data class BoundInstance(override val source: ValueParameterDescriptor): Variation()
+        data class BoundInstance(override val source: DeclarationDescriptor): Variation()
         data class Component(override val source: ClassDescriptor) : Variation()
 
         data class Equality(override val source: FunctionDescriptor): Variation()
+        data class Recursive(override val source: DeclarationDescriptor, val delegate: Binding): Variation()
+
         data class Provider(override val source: DeclarationDescriptor, val innerType: KotlinType): Variation()
         data class Lazy(override val source: DeclarationDescriptor, val innerType: KotlinType): Variation()
     }

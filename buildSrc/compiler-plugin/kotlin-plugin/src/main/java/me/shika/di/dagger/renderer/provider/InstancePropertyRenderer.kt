@@ -27,7 +27,7 @@ class InstancePropertyRenderer(private val componentName: ClassName) : BindingRe
             providerName,
             returnType,
             parentDependency,
-            instanceProperty.providerBody(variation.source, parentType)
+            instanceProperty.providerBody(variation.source)
         )
 
         return providerProperty(
@@ -39,7 +39,7 @@ class InstancePropertyRenderer(private val componentName: ClassName) : BindingRe
         )
     }
 
-    private fun PropertySpec.providerBody(source: PropertyDescriptor, parentType: TypeName?): CodeBlock {
+    private fun PropertySpec.providerBody(source: PropertyDescriptor): CodeBlock {
         return CodeBlock.of(
             "return %N.${source.name}",
             this

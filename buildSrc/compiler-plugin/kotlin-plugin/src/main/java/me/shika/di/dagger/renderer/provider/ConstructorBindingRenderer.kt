@@ -9,7 +9,7 @@ import me.shika.di.dagger.renderer.typeName
 import me.shika.di.model.Binding
 import me.shika.di.model.Binding.Variation.Constructor
 
-class ConstructorRenderer(
+class ConstructorBindingRenderer(
     private val componentName: ClassName,
     private val deps: List<ProviderSpec>
 ) : BindingRenderer<Constructor> {
