@@ -3,7 +3,7 @@ buildscript {
         mavenLocal()
     }
     dependencies {
-        classpath 'me.shika.di:dagger-compiler-plugin:0.0.1-preview'
+        classpath 'me.shika.di:dagger-compiler-plugin:0.0.2-preview'
     }
 }
 

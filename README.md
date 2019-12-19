@@ -34,7 +34,11 @@ TODO (in any order):
 - Proper scope support
 - ... the rest
 
-# To launch test file
+## To launch test file
 
 Use `./gradlew run`. It will build and install plugin to maven local, after it will compile the test project
 using freshly built plugin and run it. Yay!
+
+## Now publishing to gradle plugin portal!
+
+To get the plugin, follow instructions [here](https://plugins.gradle.org/plugin/me.shika.dagger-compiler-plugin).

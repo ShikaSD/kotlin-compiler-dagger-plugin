@@ -7,7 +7,7 @@ apply plugin: "org.jetbrains.kotlin.jvm"
 apply plugin: "maven"
 
 group "me.shika.di"
-version "0.0.1-preview"
+version "0.0.2-preview"
 
 configurations {
     embedded {
