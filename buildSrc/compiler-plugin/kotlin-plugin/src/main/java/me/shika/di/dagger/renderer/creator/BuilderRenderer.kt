@@ -3,6 +3,7 @@ package me.shika.di.dagger.renderer.creator
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.KModifier.LATEINIT
 import com.squareup.kotlinpoet.KModifier.PRIVATE
+import com.squareup.kotlinpoet.MemberName
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
@@ -17,7 +18,6 @@ import me.shika.di.dagger.resolver.qualifiers
 import me.shika.di.model.Key
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 
 class BuilderRenderer(
@@ -29,12 +29,12 @@ class BuilderRenderer(
         val builderClass = builderDescriptor.buildMethod?.containingDeclaration as? ClassDescriptor ?: return
         val builderClassName = builderClass.typeName()!!
         builder.apply {
-            builderClass(
-                builderClassName,
-                builderDescriptor.setters,
-                builderDescriptor.buildMethod,
-                isInterface = builderClass.kind == ClassKind.INTERFACE
-            )
+//            builderClass(
+//                builderClassName,
+//                builderDescriptor.setters,
+//                builderDescriptor.buildMethod,
+//                isInterface = builderClass.kind == ClassKind.INTERFACE
+//            )
             builderPublicMethod(builderClassName)
         }
     }
@@ -86,13 +86,15 @@ class BuilderRenderer(
     private fun TypeSpec.Builder.builderPublicMethod(builderClassName: TypeName) {
         companionObject {
             function("builder") {
+                addAnnotation(JvmStatic::class)
                 returns(builderClassName)
-                addCode("return ${BUILDER_IMPL_NAME}()")
+                addCode("return %M(%T::class.java)", DAGGER_BUILDER_NAME, builderClassName)
             }
         }
     }
 
     companion object {
         private const val BUILDER_IMPL_NAME = "Builder"
+        private val DAGGER_BUILDER_NAME = MemberName("dagger.Dagger", "builder")
     }
 }

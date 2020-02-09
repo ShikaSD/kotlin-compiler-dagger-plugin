@@ -1,5 +1,6 @@
 package me.shika.di.dagger.renderer
 
+import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.KModifier.INTERNAL
@@ -17,6 +18,7 @@ import me.shika.di.dagger.resolver.DaggerComponentDescriptor
 import me.shika.di.dagger.resolver.creator.BuilderDescriptor
 import me.shika.di.dagger.resolver.creator.DefaultBuilderDescriptor
 import me.shika.di.dagger.resolver.creator.FactoryDescriptor
+import me.shika.di.dagger.resolver.scopeAnnotations
 import me.shika.di.model.Endpoint
 import me.shika.di.model.ResolveResult
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -35,22 +37,37 @@ class DaggerComponentRenderer(
 
     fun render(sourcesDir: File) {
         val fileSpec = FileSpec.builder(componentClassName.packageName, componentClassName.simpleName)
-            .addType(renderComponent(componentDescriptor.graph))
+            .addType(renderComponent(/*componentDescriptor.graph*/))
             .build()
 
         fileSpec.writeTo(sourcesDir)
     }
 
-    private fun renderComponent(results: List<ResolveResult>): TypeSpec =
-        TypeSpec.classBuilder(componentClassName)
+    private fun renderComponent(/*results: List<ResolveResult>*/): TypeSpec =
+        TypeSpec.interfaceBuilder(componentClassName)
             .apply {
                 if (definition.visibility == Visibilities.INTERNAL) {
                     addModifiers(INTERNAL)
                 }
                 extendComponent()
+                if (componentDescriptor.creatorDescriptor is DefaultBuilderDescriptor) {
+                    val modules = componentDescriptor.annotation.modules.mapNotNull { it.typeName() }
+                    val dependencies = componentDescriptor.annotation.dependencies.mapNotNull { it.typeName() }
+                    val scopes = componentDescriptor.definition.scopeAnnotations().mapNotNull { it.type.typeName() }
+                    addAnnotation(
+                        AnnotationSpec.builder(DAGGER_COMPONENT)
+                            .addMember("modules = [${modules.joinToString { "%T::class" }}]", *modules.toTypedArray())
+                            .addMember("dependencies = [${dependencies.joinToString { "%T::class" }}]", *dependencies.toTypedArray())
+                            .build()
+                    )
+
+                    scopes.forEach {
+                        addAnnotation(it as ClassName)
+                    }
+                }
                 creator()
-                addDependencyInstances()
-                addBindings(results)
+//                addDependencyInstances()
+//                addBindings(results)
             }
             .build()
 
@@ -63,18 +80,20 @@ class DaggerComponentRenderer(
     }
 
     private fun TypeSpec.Builder.creator() = apply {
+        val originalComponentClassName = definition.defaultType.typeName()!! as ClassName
         when (val descriptor = componentDescriptor.creatorDescriptor) {
             is FactoryDescriptor -> FactoryRenderer(
-                componentClassName,
+                originalComponentClassName,
                 componentDescriptor.parameters,
                 this
             ).render(descriptor)
             is BuilderDescriptor -> BuilderRenderer(
-                componentClassName,
+                originalComponentClassName,
                 componentDescriptor.parameters,
                 this
             ).render(descriptor)
             is DefaultBuilderDescriptor -> DefaultBuilderRenderer(
+                originalComponentClassName,
                 componentClassName,
                 componentDescriptor.parameters,
                 this
@@ -121,5 +140,9 @@ class DaggerComponentRenderer(
                     }
                 }
             }
+    }
+
+    companion object {
+       private val DAGGER_COMPONENT = ClassName("dagger", "Component")
     }
 }

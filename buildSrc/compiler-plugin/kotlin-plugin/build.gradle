@@ -1,7 +1,11 @@
+plugins {
+    id "kotlin"
+}
+
 apply plugin: "org.jetbrains.kotlin.jvm"
 
 group "me.shika.di"
-version "0.0.1-preview"
+version "0.0.2-preview-r2"
 
 configurations {
     published
@@ -13,8 +17,13 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-gradle-plugin-api"
     published "org.jetbrains.kotlin:kotlin-gradle-plugin-model"
     published 'com.squareup:kotlinpoet:1.3.0'
+    compileOnly "org.jetbrains.kotlin:kotlin-compiler-embeddable:1.3.61"
 
-    compileOnly "org.jetbrains.kotlin:kotlin-compiler-embeddable"
+//    def KOTLIN_VERSION = '1.3.61'
+//    compileOnly("org.jetbrains.kotlin:kotlin-compiler:$KOTLIN_VERSION")
+//    compileOnly("org.jetbrains.kotlin:kotlin-plugin:$KOTLIN_VERSION")
+//    compileOnly("org.jetbrains.kotlin:kotlin-intellij-core:$KOTLIN_VERSION")
+//    compileOnly("org.jetbrains.kotlin:kotlin-platform-api:$KOTLIN_VERSION")
 }
 
 compileKotlin {

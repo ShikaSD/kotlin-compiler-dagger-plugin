@@ -86,7 +86,7 @@ class BuilderDescriptor(
             setters.any { it.paramType() == dep.defaultType }
         }
         val notSetModule = declaredModuleInstances.filterNot { module ->
-            setters.any { it.paramType() == module.defaultType }
+            setters.any { it.paramType() == module.defaultType } || module.constructors.any { it.valueParameters.isEmpty() }
         }
 
         notSetDependency.forEach { dep -> definition.report(context.trace) { BUILDER_DEPENDENCIES_NOT_PROVIDED.on(it, dep.defaultType) } }

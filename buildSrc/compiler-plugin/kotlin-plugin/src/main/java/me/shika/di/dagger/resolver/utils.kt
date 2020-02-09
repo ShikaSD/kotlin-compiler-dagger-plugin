@@ -72,7 +72,7 @@ internal fun AnnotationDescriptor.classListValue(context: ResolverContext, name:
         ?: emptyList()
 
 internal fun ClassDescriptor.isInstance() =
-    !DescriptorUtils.isObject(this) && modality != Modality.ABSTRACT
+    (!DescriptorUtils.isObject(this) && modality != Modality.ABSTRACT)
 
 internal infix fun KotlinType.applicableTo(type: KotlinType) =
     KotlinTypeChecker.DEFAULT.equalTypes(this, type)

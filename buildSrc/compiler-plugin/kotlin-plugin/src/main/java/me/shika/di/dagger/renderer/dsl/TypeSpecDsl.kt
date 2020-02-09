@@ -7,6 +7,10 @@ fun TypeSpec.Builder.nestedClass(name: String, block: TypeSpec.Builder.() -> Uni
     TypeSpec.classBuilder(name).apply(block).build()
 )
 
+fun TypeSpec.Builder.nestedInterface(name: String, block: TypeSpec.Builder.() -> Unit) = addType(
+    TypeSpec.interfaceBuilder(name).apply(block).build()
+)
+
 fun TypeSpec.Builder.companionObject(name: String? = null, block: TypeSpec.Builder.() -> Unit) = addType(
     TypeSpec.companionObjectBuilder(name).apply(block).build()
 )

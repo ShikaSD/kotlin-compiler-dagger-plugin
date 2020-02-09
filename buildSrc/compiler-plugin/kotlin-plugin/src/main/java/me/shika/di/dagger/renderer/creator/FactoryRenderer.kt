@@ -1,6 +1,7 @@
 package me.shika.di.dagger.renderer.creator
 
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.MemberName
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
 import me.shika.di.dagger.renderer.dsl.companionObject
@@ -12,7 +13,6 @@ import me.shika.di.dagger.renderer.typeName
 import me.shika.di.dagger.resolver.creator.FactoryDescriptor
 import me.shika.di.model.Key
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 
 class FactoryRenderer(
@@ -26,7 +26,7 @@ class FactoryRenderer(
         val factoryInterfaceName = factoryClass.typeName() ?: return
 
         builder.apply {
-            factoryClass(factoryInterfaceName, method, isInterface = factoryClass.kind == ClassKind.INTERFACE)
+//            factoryClass(factoryInterfaceName, method, isInterface = factoryClass.kind == ClassKind.INTERFACE)
             factoryPublicMethod(factoryInterfaceName)
         }
     }
@@ -55,8 +55,9 @@ class FactoryRenderer(
     private fun TypeSpec.Builder.factoryPublicMethod(factoryClassName: TypeName) {
         companionObject {
             function("factory") {
+                addAnnotation(JvmStatic::class)
                 returns(factoryClassName)
-                addCode("return $FACTORY_IMPL_NAME()")
+                addCode("return %M(%T::class.java)", DAGGER_FACTORY_NAME, factoryClassName)
             }
         }
     }
@@ -70,5 +71,6 @@ class FactoryRenderer(
 
     companion object {
         private const val FACTORY_IMPL_NAME = "Factory"
+        private val DAGGER_FACTORY_NAME = MemberName("dagger.Dagger", "factory")
     }
 }

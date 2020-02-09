@@ -7,13 +7,13 @@ apply plugin: "org.jetbrains.kotlin.jvm"
 apply plugin: "maven"
 
 group "me.shika.di"
-version "0.0.2-preview"
+version "0.0.2-preview-r2"
 
 configurations {
     embedded {
         transitive = false
     }
-    implementation.extendsFrom(embedded)
+    compileOnly.extendsFrom(embedded)
 }
 
 pluginBundle {
@@ -55,6 +55,7 @@ gradlePlugin {
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
     implementation "org.jetbrains.kotlin:kotlin-gradle-plugin-api"
+    implementation "org.jetbrains.kotlin:kotlin-gradle-plugin"
 
     embedded project(':compiler-plugin:kotlin-plugin')
 

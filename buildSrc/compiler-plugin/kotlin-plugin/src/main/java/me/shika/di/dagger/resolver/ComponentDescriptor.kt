@@ -5,15 +5,10 @@ import me.shika.di.COMPONENT_TYPE_PARAMETER
 import me.shika.di.COMPONENT_WITH_FACTORY_AND_BUILDER
 import me.shika.di.COMPONENT_WITH_MULTIPLE_BUILDERS
 import me.shika.di.COMPONENT_WITH_MULTIPLE_FACTORIES
-import me.shika.di.dagger.resolver.bindings.CreatorInstanceBindingResolver
-import me.shika.di.dagger.resolver.bindings.DependencyBindingResolver
-import me.shika.di.dagger.resolver.bindings.ModuleBindingResolver
 import me.shika.di.dagger.resolver.creator.BuilderDescriptor
 import me.shika.di.dagger.resolver.creator.CreatorDescriptor
 import me.shika.di.dagger.resolver.creator.DefaultBuilderDescriptor
 import me.shika.di.dagger.resolver.creator.FactoryDescriptor
-import me.shika.di.dagger.resolver.endpoints.InjectionEndpointResolver
-import me.shika.di.dagger.resolver.endpoints.ProvisionEndpointResolver
 import me.shika.di.model.Binding
 import me.shika.di.model.Key
 import me.shika.di.model.ResolveResult
@@ -34,6 +29,9 @@ class DaggerComponentDescriptor(
     var creatorDescriptor: CreatorDescriptor? = null
         private set
 
+    lateinit var annotation: ComponentAnnotationDescriptor
+        private set
+
     var parameters: List<Key> = emptyList()
         private set
 
@@ -48,34 +46,36 @@ class DaggerComponentDescriptor(
         val componentAnnotation = definition.componentAnnotation()?.let {
             ComponentAnnotationDescriptor(context, it)
         } ?: return
+
+        annotation = componentAnnotation
         val scopes = definition.scopeAnnotations()
 
         creatorDescriptor = definition.findCreator(componentAnnotation) ?: DefaultBuilderDescriptor()
 
-        val bindingResolvers = listOfNotNull(
-            ModuleBindingResolver(componentAnnotation, definition, context),
-            DependencyBindingResolver(componentAnnotation, definition, context),
-            creatorDescriptor?.let { CreatorInstanceBindingResolver(it) },
-            { listOf(componentBinding()) }
-        )
+//        val bindingResolvers = listOfNotNull(
+//            ModuleBindingResolver(componentAnnotation, definition, context),
+//            DependencyBindingResolver(componentAnnotation, definition, context),
+//            creatorDescriptor?.let { CreatorInstanceBindingResolver(it) },
+//            { listOf(componentBinding()) }
+//        )
 
         parameters = listOfNotNull(
             componentAnnotation.moduleInstances.map { Key(it.defaultType) },
             componentAnnotation.dependencies.map { Key(it.defaultType) },
             creatorDescriptor?.instances?.map { it.key }
         ).flatten()
-
-        val endpointResolvers = listOf(
-            ProvisionEndpointResolver(componentAnnotation, definition, context),
-            InjectionEndpointResolver(componentAnnotation, definition, context)
-        )
-
-        graph = GraphBuilder(
-            context,
-            scopes,
-            endpointResolvers.flatMap { it() },
-            bindingResolvers.flatMap { it() }
-        ).build()
+//
+//        val endpointResolvers = listOf(
+//            ProvisionEndpointResolver(componentAnnotation, definition, context),
+//            InjectionEndpointResolver(componentAnnotation, definition, context)
+//        )
+//
+//        graph = GraphBuilder(
+//            context,
+//            scopes,
+//            endpointResolvers.flatMap { it() },
+//            bindingResolvers.flatMap { it() }
+//        ).build()
     }
 
     private fun ClassDescriptor.componentAnnotation() =

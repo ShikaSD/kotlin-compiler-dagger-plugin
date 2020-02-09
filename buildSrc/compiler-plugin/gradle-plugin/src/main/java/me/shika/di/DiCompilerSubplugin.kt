@@ -7,19 +7,21 @@ import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 import org.jetbrains.kotlin.gradle.plugin.KotlinGradleSubplugin
 import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.io.File
 
 // @AutoService(KotlinGradleSubplugin::class)
-class DiCompilerSubplugin: KotlinGradleSubplugin<AbstractCompile> {
+class DiCompilerSubplugin: KotlinGradleSubplugin<KotlinCompile> {
     override fun apply(
         project: Project,
-        kotlinCompile: AbstractCompile,
+        kotlinCompile: KotlinCompile,
         javaCompile: AbstractCompile?,
         variantData: Any?,
         androidProjectHandler: Any?,
         kotlinCompilation: KotlinCompilation<KotlinCommonOptions>?
     ): List<SubpluginOption> {
         val extension = project.extensions.findByType(DiCompilerExtension::class.java) ?: DiCompilerExtension()
+        kotlinCompile.usePreciseJavaTracking = false
 
         val sourceSetName = if (variantData != null) {
             // Lol
@@ -28,8 +30,7 @@ class DiCompilerSubplugin: KotlinGradleSubplugin<AbstractCompile> {
                 invoke(variantData) as String
             }
         } else {
-            if (kotlinCompilation == null) error("In non-Android projects, Kotlin compilation should not be null")
-            kotlinCompilation.compilationName
+            kotlinCompilation?.compilationName ?: "src"
         }
 
         val sources = File(project.buildDir, "generated/source/di-compiler/$sourceSetName/")
@@ -62,7 +63,7 @@ class DiCompilerSubplugin: KotlinGradleSubplugin<AbstractCompile> {
         SubpluginArtifact(
             groupId = "me.shika.di",
             artifactId = "dagger-compiler-plugin",
-            version = "0.0.1-preview"
+            version = "0.0.2-preview-r2"
         )
 
     override fun isApplicable(project: Project, task: AbstractCompile): Boolean =

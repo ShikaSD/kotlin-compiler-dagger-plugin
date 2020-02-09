@@ -62,7 +62,9 @@ class FactoryDescriptor(
         val notProvidedDependencies = declaredDependencies.filterNot { it.defaultType in dependencyParams.map { it.type } }
         reportOnMethod(notProvidedDependencies.map { it.defaultType }, FACTORY_DEPENDENCIES_NOT_PROVIDED)
 
-        val notProvidedModules = declaredModuleInstances.filterNot { it.defaultType in dependencyParams.map { it.type } }
+        val notProvidedModules = declaredModuleInstances.filterNot {
+            it.defaultType in dependencyParams.map { it.type } || it.constructors.any { it.valueParameters.isEmpty() }
+        }
         reportOnMethod(notProvidedModules.map { it.defaultType }, FACTORY_MODULE_NOT_PROVIDED)
 
         val notDeclared = dependencyParams.filterNot { param ->
