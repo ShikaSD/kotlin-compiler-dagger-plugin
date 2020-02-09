@@ -1,0 +1,55 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        jcenter()
+        mavenLocal()
+    }
+    dependencies {
+        classpath 'me.shika.di:dagger-compiler-plugin:0.0.3-preview'
+    }
+}
+
+apply plugin: 'java-library'
+apply plugin: 'kotlin'
+apply plugin: 'me.shika.dagger-compiler-plugin'
+
+sourceSets.test.java {
+    srcDir file('dagger/javatests')
+    include 'dagger/functional/**'
+
+    exclude 'dagger/functional/producers/**'
+    exclude 'dagger/functional/tck/**'
+    exclude 'dagger/functional/spi/**'
+}
+
+test.filter {
+
+}
+
+dependencies {
+    testImplementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+    testImplementation deps.dagger.reflect
+    testImplementation deps.junit
+    testImplementation deps.truth
+    testImplementation deps.auto.value.annotations
+    testImplementation deps.auto.factory
+    testImplementation deps.auto.factory
+    testAnnotationProcessor deps.auto.value.compiler
+    testAnnotationProcessor deps.auto.factory
+}
+
+def ensureDaggerSubmodule = tasks.create('ensureDaggerSubmodule') {
+    doFirst {
+        if (!file('dagger/.git').exists()) {
+            throw new RuntimeException(
+                    "Missing 'dagger' git submodule clone. Did you run 'git submodule update --init'?")
+        }
+        def describe = 'git describe'.execute(null, file('dagger'))
+        if (describe.waitFor() != 0) {
+            System.err.println(describe.errorStream.text)
+            throw new RuntimeException("Could not run 'git describe' in 'dagger' git submodule clone")
+        }
+    }
+}
+compileTestJava.dependsOn(ensureDaggerSubmodule)
+

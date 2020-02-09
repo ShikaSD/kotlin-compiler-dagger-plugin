@@ -5,6 +5,26 @@ buildscript {
     dependencies {
         classpath 'me.shika.di:dagger-compiler-plugin:0.0.2-preview'
     }
+    ext.versions = [
+        'dagger': '2.25.2'
+    ]
+
+    ext.deps = [
+        'dagger': [
+            'runtime': "com.google.dagger:dagger:${versions.dagger}",
+            'reflect': "com.jakewharton.dagger:dagger-reflect:0.2.0",
+            'compiler': "com.google.dagger:dagger-compiler:${versions.dagger}",
+        ],
+        'junit': 'junit:junit:4.12',
+        'truth': 'com.google.truth.extensions:truth-java8-extension:1.0',
+        'auto': [
+            'factory': 'com.google.auto.factory:auto-factory:1.0-beta6',
+            'value': [
+                'annotations': 'com.google.auto.value:auto-value-annotations:1.6.5',
+                'compiler': 'com.google.auto.value:auto-value:1.6.5',
+            ],
+        ],
+    ]
 }
 
 plugins {

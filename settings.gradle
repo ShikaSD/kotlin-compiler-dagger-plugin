@@ -1,1 +1,6 @@
-rootProject.name = 'test-project'
+rootProject.name = 'dagger-kotlin-compiler-plugin'
+
+include ':codegen:gradle-plugin'
+include ':codegen:kotlin-plugin'
+
+include ':testing:dagger-google'
