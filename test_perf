@@ -1,0 +1,11 @@
+Kotlin to JVM Compiler performance report
+ANALYZE: 1 files (153 lines) in targets [test-project-java-production]in 3140 ms - 48.726 loc/s
+Binary class from Kotlin file performed 182 times, total time 63 ms
+Call resolve performed 113 times, total time 896 ms
+Find Java class performed 12 times, total time 42 ms
+GC time for PS MarkSweep is 628 ms
+GC time for PS Scavenge is 280 ms
+GENERATE: 1 files (153 lines) target test-project-java-production in 379 ms - 403.694 loc/s
+INIT: Compiler initialized in 1283 ms
+JIT time is 36610 ms
+Type info performed 111 times, total time 974 ms
