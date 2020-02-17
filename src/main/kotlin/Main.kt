@@ -3,14 +3,16 @@ import dagger.BindsInstance
 import dagger.Component
 import dagger.Module
 import dagger.Provides
+import dsl.SerializableObject
+import dsl.dsl
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Qualifier
 import javax.inject.Scope
 
 @TestScope
-@Component(
-    modules = [TestModuleInstance::class, AbstractModule::class],
+@dagger.Component(
+    modules = [TestModuleInstance::class, AbstractModule::class, ZeroParameterModuleInstance::class],
     dependencies = [Dependency::class]
 )
 interface Main : Common {

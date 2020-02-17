@@ -3,7 +3,7 @@ buildscript {
         mavenLocal()
     }
     dependencies {
-        classpath 'me.shika.di:dagger-compiler-plugin:0.0.2-preview'
+        classpath 'me.shika.di:dagger-compiler-plugin:0.0.3-preview'
     }
     ext.versions = [
         'dagger': '2.25.2'
@@ -47,6 +47,13 @@ allprojects {
         maven { url "https://maven.google.com" }
         maven { url "https://plugins.gradle.org/m2/" }
     }
+
+    compileKotlin {
+        kotlinOptions.jvmTarget = "1.8"
+    }
+    compileTestKotlin {
+        kotlinOptions.jvmTarget = "1.8"
+    }
 }
 
 dependencies {
@@ -54,16 +61,4 @@ dependencies {
     implementation "javax.inject:javax.inject:1"
     implementation 'com.google.dagger:dagger:2.22.1'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.2'
-//    kapt 'com.google.dagger:dagger-compiler:2.22.1'
-}
-
-compileKotlin {
-    kotlinOptions.jvmTarget = "1.8"
-}
-compileTestKotlin {
-    kotlinOptions.jvmTarget = "1.8"
-}
-
-application {
-    mainClassName = 'MainKt'
 }
