@@ -1,7 +1,6 @@
 apply plugin: "org.jetbrains.kotlin.jvm"
 
 group "me.shika.di"
-version "0.0.1-preview"
 
 configurations {
     published
@@ -15,11 +14,4 @@ dependencies {
     published 'com.squareup:kotlinpoet:1.3.0'
 
     compileOnly "org.jetbrains.kotlin:kotlin-compiler-embeddable"
-}
-
-compileKotlin {
-    kotlinOptions.jvmTarget = "1.8"
-}
-compileTestKotlin {
-    kotlinOptions.jvmTarget = "1.8"
 }

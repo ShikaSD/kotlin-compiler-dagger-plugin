@@ -7,7 +7,6 @@ apply plugin: "org.jetbrains.kotlin.jvm"
 apply plugin: "maven"
 
 group "me.shika.di"
-version "0.0.2-preview"
 
 configurations {
     embedded {
@@ -57,9 +56,11 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-gradle-plugin-api"
 
     embedded project(':codegen:kotlin-plugin')
+    embedded project(':build-info')
 
     embeddedProjects().collect { it.configurations.findByName("published") }
         .forEach {
+            if (it == null) return
             it.dependencies.forEach {
                 runtime "$it.group:$it.name:$it.version"
             }

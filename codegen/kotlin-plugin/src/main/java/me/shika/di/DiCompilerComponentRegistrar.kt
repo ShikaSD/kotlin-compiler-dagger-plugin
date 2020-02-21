@@ -10,10 +10,11 @@ import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 //@AutoService(ComponentRegistrar::class)
 class DiCompilerComponentRegistrar: ComponentRegistrar {
     override fun registerProjectComponents(project: MockProject, configuration: CompilerConfiguration) {
-        if (configuration[KEY_ENABLED] != true) {
+        if (configuration[KEY_ENABLED] == false) {
             return
         }
-        val sourcesDir = configuration[KEY_SOURCES] ?: return
+        val sourcesDir = configuration[KEY_SOURCES]
+            ?: throw IllegalStateException("No output folder for generated files specified")
 
         sourcesDir.deleteRecursively()
         sourcesDir.mkdirs()

@@ -20,9 +20,9 @@ class DiCommandLineProcessor : CommandLineProcessor {
             ),
             CliOption(
                 "sources",
+                "<path>",
                 "generated files folder",
-                "generated files folder",
-                required = false
+                required = true
             )
         )
 

@@ -5,7 +5,6 @@ plugins {
 apply plugin: "org.jetbrains.kotlin.jvm"
 
 group "me.shika.di"
-version "0.0.2-preview-r2"
 
 configurations {
     published
@@ -24,11 +23,4 @@ dependencies {
 //    compileOnly("org.jetbrains.kotlin:kotlin-plugin:$KOTLIN_VERSION")
 //    compileOnly("org.jetbrains.kotlin:kotlin-intellij-core:$KOTLIN_VERSION")
 //    compileOnly("org.jetbrains.kotlin:kotlin-platform-api:$KOTLIN_VERSION")
-}
-
-compileKotlin {
-    kotlinOptions.jvmTarget = "1.8"
-}
-compileTestKotlin {
-    kotlinOptions.jvmTarget = "1.8"
 }

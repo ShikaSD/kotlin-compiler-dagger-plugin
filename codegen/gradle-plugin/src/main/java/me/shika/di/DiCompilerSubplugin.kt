@@ -1,5 +1,6 @@
 package me.shika.di
 
+import me.shika.BuildInfo
 import org.gradle.api.Project
 import org.gradle.api.tasks.compile.AbstractCompile
 import org.jetbrains.kotlin.gradle.dsl.KotlinCommonOptions
@@ -62,7 +63,7 @@ class DiCompilerSubplugin: KotlinGradleSubplugin<AbstractCompile> {
         SubpluginArtifact(
             groupId = "me.shika.di",
             artifactId = "dagger-compiler-plugin",
-            version = "0.0.1-preview"
+            version = BuildInfo.VERSION
         )
 
     override fun isApplicable(project: Project, task: AbstractCompile): Boolean =

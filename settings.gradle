@@ -1,8 +1,11 @@
 rootProject.name = 'dagger-kotlin-compiler-plugin'
 
+include ':build-info'
+
 include ':codegen:gradle-plugin'
 include ':codegen:kotlin-plugin'
 include ':codegen-reflect:gradle-plugin'
 include ':codegen-reflect:kotlin-plugin'
 
 include ':testing:dagger-google'
+include ':testing:integration'

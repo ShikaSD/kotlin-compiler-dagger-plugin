@@ -25,7 +25,7 @@ import org.jetbrains.kotlin.util.slicedMap.Slices
 //@AutoService(ComponentRegistrar::class)
 class DiCompilerComponentRegistrar: ComponentRegistrar {
     override fun registerProjectComponents(project: MockProject, configuration: CompilerConfiguration) {
-        if (configuration[KEY_ENABLED] != true) {
+        if (configuration[KEY_ENABLED] == false) {
             return
         }
         val sourcesDir = configuration[KEY_SOURCES] ?: return

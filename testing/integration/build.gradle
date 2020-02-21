@@ -1,0 +1,35 @@
+plugins {
+    id "kotlin"
+}
+
+apply plugin: "org.jetbrains.kotlin.jvm"
+
+configurations {
+    testCompilerImplementation
+}
+
+dependencies {
+    implementation deps.dagger.runtime
+    implementation deps.kotlin.stdlib
+    implementation deps.junit
+    implementation deps.truth
+
+    kotlinCompilerPluginClasspath project(':codegen:kotlin-plugin')
+}
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
+    dependsOn(':codegen:kotlin-plugin:build')
+    kotlinOptions {
+        def pluginProject = project(':codegen:kotlin-plugin')
+        def pluginFile = new File(pluginProject.buildDir, "libs/kotlin-plugin.jar")
+        def sourcesDir = new File(buildDir, "kotlin/generated")
+        sourceSets {
+            test.kotlin.srcDirs += sourcesDir.getAbsolutePath()
+        }
+        freeCompilerArgs = [
+//            "-Xplugin=${pluginFile.getAbsolutePath()}",
+            "-P",
+            "plugin:dagger-compiler-plugin:sources=${sourcesDir.getAbsolutePath()}"
+        ]
+    }
+}
