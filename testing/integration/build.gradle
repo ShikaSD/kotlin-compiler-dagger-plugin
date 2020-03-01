@@ -19,15 +19,12 @@ dependencies {
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
     dependsOn(':codegen:kotlin-plugin:build')
+    def sourcesDir = new File(buildDir, "kotlin/${name}/generated")
+
     kotlinOptions {
         def pluginProject = project(':codegen:kotlin-plugin')
         def pluginFile = new File(pluginProject.buildDir, "libs/kotlin-plugin.jar")
-        def sourcesDir = new File(buildDir, "kotlin/generated")
-        sourceSets {
-            test.kotlin.srcDirs += sourcesDir.getAbsolutePath()
-        }
         freeCompilerArgs = [
-//            "-Xplugin=${pluginFile.getAbsolutePath()}",
             "-P",
             "plugin:dagger-compiler-plugin:sources=${sourcesDir.getAbsolutePath()}"
         ]

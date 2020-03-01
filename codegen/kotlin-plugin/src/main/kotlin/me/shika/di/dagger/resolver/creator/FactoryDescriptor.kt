@@ -19,6 +19,7 @@ import org.jetbrains.kotlin.diagnostics.DiagnosticFactory1
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter.Companion.FUNCTIONS
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.typeUtil.isSubtypeOf
+import org.jetbrains.kotlin.types.typeUtil.makeNotNullable
 
 class FactoryDescriptor(
     private val component: ClassDescriptor,
@@ -41,7 +42,7 @@ class FactoryDescriptor(
             .filterIsInstance<FunctionDescriptor>()
             .filter { it.modality == Modality.ABSTRACT }
 
-        if (factoryMethods.size != 1 || factoryMethods.none { component.defaultType.isSubtypeOf(it.returnType!!) }) {
+        if (factoryMethods.size != 1 || factoryMethods.none { component.defaultType.makeNotNullable().isSubtypeOf(it.returnType!!) }) {
             definition.report(context.trace) { FACTORY_WRONG_METHOD.on(it, factoryMethods) }
             return
         }
@@ -59,14 +60,14 @@ class FactoryDescriptor(
         val declaredDependencies = componentAnnotation.dependencies
         val declaredModuleInstances = componentAnnotation.moduleInstances
 
-        val notProvidedDependencies = declaredDependencies.filterNot { it.defaultType in dependencyParams.map { it.type } }
+        val notProvidedDependencies = declaredDependencies.filterNot { it.defaultType in dependencyParams.map { it.type.makeNotNullable() } }
         reportOnMethod(notProvidedDependencies.map { it.defaultType }, FACTORY_DEPENDENCIES_NOT_PROVIDED)
 
-        val notProvidedModules = declaredModuleInstances.filterNot { it.defaultType in dependencyParams.map { it.type } }
+        val notProvidedModules = declaredModuleInstances.filterNot { it.defaultType in dependencyParams.map { it.type.makeNotNullable() } }
         reportOnMethod(notProvidedModules.map { it.defaultType }, FACTORY_MODULE_NOT_PROVIDED)
 
         val notDeclared = dependencyParams.filterNot { param ->
-            declaredDependencies.any { param.type == it.defaultType } || declaredModuleInstances.any { param.type == it.defaultType }
+            declaredDependencies.any { param.type.makeNotNullable() == it.defaultType } || declaredModuleInstances.any { param.type.makeNotNullable() == it.defaultType }
         }
         reportNotDeclared(notDeclared.toList())
     }
