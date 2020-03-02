@@ -15,6 +15,8 @@ configurations {
     implementation.extendsFrom(embedded)
 }
 
+def ARTIFACT_ID = "dagger-compiler-plugin"
+
 pluginBundle {
     website = 'https://github.com/ShikaSD/kotlin-compiler-di'
     vcsUrl = 'https://github.com/ShikaSD/kotlin-compiler-di.git'
@@ -29,7 +31,7 @@ pluginBundle {
 
     mavenCoordinates {
         groupId = project.getGroup()
-        artifactId = "dagger-compiler-plugin"
+        artifactId = ARTIFACT_ID
         version = project.getVersion()
     }
 }
@@ -37,7 +39,7 @@ pluginBundle {
 install {
     repositories {
         mavenInstaller {
-            pom.artifactId = 'dagger-compiler-plugin'
+            pom.artifactId = ARTIFACT_ID
         }
     }
 }
@@ -45,7 +47,7 @@ install {
 gradlePlugin {
     plugins {
         diPlugin {
-            id = "me.shika.dagger-compiler-plugin"
+            id = "me.shika.$ARTIFACT_ID"
             implementationClass = "me.shika.di.DiCompilerPlugin"
         }
     }
@@ -56,13 +58,14 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-gradle-plugin-api"
 
     embedded project(':codegen:kotlin-plugin')
-    embedded project(':build-info')
+    embedded project(':common:build-info')
+    embedded project(':common:base-gradle-plugin')
 
     embeddedProjects().collect { it.configurations.findByName("published") }
         .forEach {
             if (it == null) return
             it.dependencies.forEach {
-                runtime "$it.group:$it.name:$it.version"
+                runtimeOnly "$it.group:$it.name:$it.version"
             }
         }
 }

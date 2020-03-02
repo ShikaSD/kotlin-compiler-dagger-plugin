@@ -1,0 +1,9 @@
+apply plugin: "org.jetbrains.kotlin.jvm"
+
+group "me.shika.di"
+
+dependencies {
+    implementation gradleApi()
+    implementation deps.kotlin.stdlib
+    implementation "org.jetbrains.kotlin:kotlin-gradle-plugin-api"
+}

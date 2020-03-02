@@ -1,4 +1,0 @@
-package some
-
-interface SomeDependency {
-}
