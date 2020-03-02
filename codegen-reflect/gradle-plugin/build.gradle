@@ -1,5 +1,4 @@
 // TODO: Cleanup
-
 plugins {
     id 'com.gradle.plugin-publish' version '0.10.1'
 }
@@ -7,15 +6,9 @@ plugins {
 apply plugin: "java-gradle-plugin"
 apply plugin: "org.jetbrains.kotlin.jvm"
 apply plugin: "maven"
+apply from: rootProject.file("gradle/embedded.gradle")
 
 group "me.shika.di"
-
-configurations {
-    embedded {
-        transitive = false
-    }
-    runtimeOnly.extendsFrom(embedded)
-}
 
 pluginBundle {
     website = 'https://github.com/ShikaSD/kotlin-compiler-me.shika.di'
@@ -57,39 +50,7 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
     implementation "org.jetbrains.kotlin:kotlin-gradle-plugin-api"
 
-    embedded project(':codegen:kotlin-plugin')
+    embedded project(':codegen-reflect:kotlin-plugin')
     embedded project(':common:build-info')
-    embedded project(':common:base-gradle-plugin')
-
-    embeddedProjects().collect { it.configurations.findByName("published") }
-        .forEach {
-            if (it == null) return
-            it.dependencies.forEach {
-                runtimeOnly "$it.group:$it.name:$it.version"
-            }
-        }
+    embedded project(':common:gradle-base')
 }
-
-jar {
-    from project.configurations.embedded.collect {
-        zipTree(it)
-    }
-}
-
-task sourcesJar(type: Jar) {
-    archiveClassifier = 'sources'
-    from embeddedProjects().collect { it.sourceSets.main.allSource }
-}
-
-artifacts {
-    archives sourcesJar
-}
-
-def embeddedProjects() {
-    return project.configurations.findByName('embedded')
-        .resolvedConfiguration
-        .resolvedArtifacts
-        .findAll { it.id.componentIdentifier instanceof ProjectComponentIdentifier }
-        .collect { project(it.id.componentIdentifier.projectPath) }
-}
-

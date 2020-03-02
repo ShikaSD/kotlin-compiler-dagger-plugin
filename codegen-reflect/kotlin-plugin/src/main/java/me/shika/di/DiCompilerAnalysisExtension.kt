@@ -75,7 +75,6 @@ class DiCompilerAnalysisExtension(
                         val (component, descriptorCreateTime) = measureTimedValue {
                             DaggerComponentDescriptor(
                                 classDescriptor,
-                                file,
                                 resolverContext
                             )
                         }

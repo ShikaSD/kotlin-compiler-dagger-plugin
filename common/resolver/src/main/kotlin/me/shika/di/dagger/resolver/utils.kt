@@ -27,19 +27,20 @@ import org.jetbrains.kotlin.types.checker.KotlinTypeChecker
 import org.jetbrains.kotlin.types.typeUtil.isInt
 import org.jetbrains.kotlin.types.typeUtil.makeNotNullable
 
-internal fun KotlinType.classDescriptor() = constructor.declarationDescriptor as? ClassDescriptor
+fun KotlinType.classDescriptor() = constructor.declarationDescriptor as? ClassDescriptor
 
-internal fun DeclarationDescriptor.scopeAnnotations(): List<AnnotationDescriptor> =
+fun DeclarationDescriptor.scopeAnnotations(): List<AnnotationDescriptor> =
     annotations.filter {
         it.annotationClass?.annotations?.hasAnnotation(SCOPE_FQ_NAME) == true
             && it.fqName != REUSABLE_FQ_NAME
     }
 
-internal fun Annotated.qualifiers(): List<AnnotationDescriptor> =
+fun Annotated.qualifiers(): List<AnnotationDescriptor> =
     annotations.filter {
         it.annotationClass?.annotations?.hasAnnotation(QUALIFIER_FQ_NAME) == true
     }
 
+//TODO: replace with actual class refs
 internal val SCOPE_FQ_NAME = FqName("javax.inject.Scope")
 internal val QUALIFIER_FQ_NAME = FqName("javax.inject.Qualifier")
 internal val REUSABLE_FQ_NAME = FqName("dagger.Reusable")

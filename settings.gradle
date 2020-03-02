@@ -1,7 +1,9 @@
 rootProject.name = 'dagger-kotlin-compiler-plugin'
 
 include ':common:build-info'
-include ':common:base-gradle-plugin'
+include ':common:gradle-base'
+include ':common:kotlin-base'
+include ':common:resolver'
 
 include ':codegen:gradle-plugin'
 include ':codegen:kotlin-plugin'

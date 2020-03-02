@@ -1,5 +1,4 @@
 apply plugin: "org.jetbrains.kotlin.jvm"
-apply from: rootProject.file('gradle/embedded.gradle')
 
 group "me.shika.di"
 
@@ -8,10 +7,7 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-gradle-plugin-api"
     compileOnly "org.jetbrains.kotlin:kotlin-compiler-embeddable"
 
-    published "org.jetbrains.kotlin:kotlin-gradle-plugin-model"
-    published deps.kotlinpoet
-    embedded project(':common:kotlin-base')
-    embedded project(':common:resolver')
+    implementation project(':common:kotlin-base')
 }
 
 compileKotlin {

@@ -14,16 +14,13 @@ dependencies {
     implementation deps.junit
     implementation deps.truth
 
-    kotlinCompilerPluginClasspath project(':codegen:kotlin-plugin')
+    kotlinCompilerPluginClasspath project(':codegen-reflect:kotlin-plugin')
 }
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
-    dependsOn(':codegen:kotlin-plugin:build')
     def sourcesDir = new File(buildDir, "kotlin/${name}/generated")
 
     kotlinOptions {
-        def pluginProject = project(':codegen:kotlin-plugin')
-        def pluginFile = new File(pluginProject.buildDir, "libs/kotlin-plugin.jar")
         freeCompilerArgs = [
             "-P",
             "plugin:dagger-compiler-plugin:sources=${sourcesDir.getAbsolutePath()}"

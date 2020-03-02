@@ -17,13 +17,12 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.getDescriptorsFiltered
 
 class DaggerComponentDescriptor(
     val definition: ClassDescriptor,
-    val file: KtFile,
+
     val context: ResolverContext
 ) {
     var creatorDescriptor: CreatorDescriptor? = null

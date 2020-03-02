@@ -39,18 +39,11 @@ version '0.0.4-preview'
 
 System.setProperty("kotlin.compiler.execution.strategy", "in-process") // For debugging
 
-allprojects {
+subprojects {
     repositories {
         mavenLocal()
         mavenCentral()
         maven { url "https://maven.google.com" }
         maven { url "https://plugins.gradle.org/m2/" }
-    }
-
-    compileKotlin {
-        kotlinOptions.jvmTarget = "1.8"
-    }
-    compileTestKotlin {
-        kotlinOptions.jvmTarget = "1.8"
     }
 }

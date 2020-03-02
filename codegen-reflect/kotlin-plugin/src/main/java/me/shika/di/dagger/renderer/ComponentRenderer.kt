@@ -10,19 +10,17 @@ import me.shika.di.dagger.renderer.creator.BuilderRenderer
 import me.shika.di.dagger.renderer.creator.DefaultBuilderRenderer
 import me.shika.di.dagger.renderer.creator.FactoryRenderer
 import me.shika.di.dagger.renderer.dsl.markPrivate
-import me.shika.di.dagger.renderer.dsl.overrideFunction
 import me.shika.di.dagger.renderer.dsl.primaryConstructor
 import me.shika.di.dagger.renderer.dsl.property
-import me.shika.di.dagger.renderer.provider.getValue
 import me.shika.di.dagger.resolver.DaggerComponentDescriptor
 import me.shika.di.dagger.resolver.creator.BuilderDescriptor
 import me.shika.di.dagger.resolver.creator.DefaultBuilderDescriptor
 import me.shika.di.dagger.resolver.creator.FactoryDescriptor
 import me.shika.di.dagger.resolver.scopeAnnotations
-import me.shika.di.model.Endpoint
-import me.shika.di.model.ResolveResult
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Visibilities
+import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
+import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.renderer.render
 import java.io.File
 
@@ -31,7 +29,7 @@ class DaggerComponentRenderer(
 ) {
     private val definition = componentDescriptor.definition
     private val componentClassName = ClassName(
-        componentDescriptor.file.packageFqName.render(),
+        (definition.findPsi()?.containingFile as KtFile).packageFqName.render(),
         "Dagger${definition.name}"
     )
 
@@ -66,8 +64,6 @@ class DaggerComponentRenderer(
                     }
                 }
                 creator()
-//                addDependencyInstances()
-//                addBindings(results)
             }
             .build()
 
@@ -114,32 +110,6 @@ class DaggerComponentRenderer(
             addModifiers(PRIVATE)
             addParameters(properties.map { it.toParameter() })
         }
-    }
-
-    private fun TypeSpec.Builder.addBindings(results: List<ResolveResult>) = apply {
-        val factoryRenderer =
-            GraphRenderer(this, componentClassName)
-        val membersInjectorRenderer =
-            MembersInjectorRenderer(this, componentClassName, factoryRenderer)
-        results.groupBy { it.endpoint.source }
-            .map { (_, results) ->
-                val result = results.first()
-                when (val endpoint = result.endpoint) {
-                    is Endpoint.Provided -> {
-                        val provider = factoryRenderer.getProvider(result.graph.single())
-                        overrideFunction(endpoint.source) {
-                            addCode("return ${provider!!.getValue()}")
-                        }
-                    }
-                    is Endpoint.Injected -> {
-                        overrideFunction(endpoint.source) {
-                            val injectedValue = parameters.first()
-                            val membersInjector = membersInjectorRenderer.getMembersInjector(injectedValue.type, results)
-                            addCode("%N.injectMembers(${injectedValue.name})", membersInjector)
-                        }
-                    }
-                }
-            }
     }
 
     companion object {

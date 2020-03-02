@@ -59,7 +59,7 @@ dependencies {
 
     embedded project(':codegen:kotlin-plugin')
     embedded project(':common:build-info')
-    embedded project(':common:base-gradle-plugin')
+    embedded project(':common:gradle-base')
 
     embeddedProjects().collect { it.configurations.findByName("published") }
         .forEach {
